@@ -205,24 +205,32 @@ export function bridgeIslands(m: ManifoldToplevel, foot: CS, width: number, maxS
   let cur = foot;
   let bridges = 0, islands = 0;
   for (let round = 0; round < 6; round++) {
-    const comps = cur.decompose();
+    const all = cur.decompose();
+    // Boolean round-trips can leave zero-area slivers behind; they are not islands.
+    const comps = all.filter((c) => c.area() >= 1);
+    for (const c of all) if (!comps.includes(c)) c.delete();
+    if (DEBUG) console.log(`bridge round ${round}: ${comps.length} components (${(performance.now()).toFixed(0)} ms)`);
     if (comps.length <= 1) { for (const c of comps) c.delete(); break; }
     comps.sort((a, b) => b.area() - a.area());
-    const verts = comps.map((c) => c.toPolygons().flat());
+    // Sample each outline (dense rounded offsets have thousands of vertices) and keep its bounding box, so the
+    // nearest-pair search can skip most pairs on box distance alone.
+    const samples = comps.map((c) => { const v = c.toPolygons().flat(); const step = Math.max(1, Math.floor(v.length / 400)); const out: [number, number][] = []; for (let i = 0; i < v.length; i += step) out.push([v[i][0], v[i][1]]); return out; });
+    const boxes = comps.map((c) => c.bounds());
+    const boxDist = (a: number, b: number) => { const A = boxes[a], B = boxes[b]; const dx = Math.max(0, A.min[0] - B.max[0], B.min[0] - A.max[0]); const dy = Math.max(0, A.min[1] - B.max[1], B.min[1] - A.max[1]); return Math.hypot(dx, dy); };
     const strips: CS[] = [];
     islands = 0;
     // Each island bridges to the nearest point of any larger component (larger components first, so chains join).
     for (let i = 1; i < comps.length; i++) {
       let bd = Infinity, ba: [number, number] = [0, 0], bb: [number, number] = [0, 0];
-      const vi = verts[i];
-      for (let j = 0; j < i; j++) {
-        const vj = verts[j];
-        // Coarse: sample the larger list so the pair search stays cheap on dense outlines.
-        const stepJ = Math.max(1, Math.floor(vj.length / 600)), stepI = Math.max(1, Math.floor(vi.length / 600));
-        for (let a = 0; a < vi.length; a += stepI) for (let b = 0; b < vj.length; b += stepJ) {
+      const vi = samples[i];
+      const order = [...Array(i).keys()].map((j) => ({ j, d: boxDist(i, j) })).filter((o) => o.d <= maxSpan).sort((a, b) => a.d - b.d);
+      for (const { j, d: lower } of order) {
+        if (lower >= Math.sqrt(bd)) break;
+        const vj = samples[j];
+        for (let a = 0; a < vi.length; a++) for (let b = 0; b < vj.length; b++) {
           const dx = vi[a][0] - vj[b][0], dy = vi[a][1] - vj[b][1];
           const d = dx * dx + dy * dy;
-          if (d < bd) { bd = d; ba = [vi[a][0], vi[a][1]]; bb = [vj[b][0], vj[b][1]]; }
+          if (d < bd) { bd = d; ba = vi[a]; bb = vj[b]; }
         }
       }
       const d = Math.sqrt(bd);
@@ -240,9 +248,7 @@ export function bridgeIslands(m: ManifoldToplevel, foot: CS, width: number, maxS
     const u = CrossSection.union([cur, ...strips]);
     for (const s of strips) s.delete();
     if (cur !== foot) cur.delete();
-    // Soften the strip's inside corners a touch so tiles print cleanly.
-    const grown = u.offset(2, 'Round'); u.delete();
-    cur = grown.offset(-2, 'Round'); grown.delete();
+    cur = u;
   }
   return { foot: cur, bridges, islands };
 }

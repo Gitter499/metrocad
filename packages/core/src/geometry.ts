@@ -407,13 +407,17 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     if (params.base === 'outline') {
       const all = CrossSection.union([groove, pockets, ...(labelPockets ? [labelPockets] : []), ...(tapePockets ? [tapePockets] : [])]);
       const grown = all.offset(params.baseMargin + 4, 'Round'); all.delete();
-      const foot0 = grown.offset(-4, 'Round'); grown.delete();
+      const foot1 = grown.offset(-4, 'Round'); grown.delete();
+      const foot0 = foot1.simplify(0.02); foot1.delete(); // rounded offsets are vertex-heavy; every later boolean pays for them
+      if ((globalThis as any).process?.env?.TILE_DEBUG) (globalThis as any).__metrocadFoot = foot0.toPolygons();
+      progress('geometry', 0.79, 'Base outline: joining islands');
       const br = bridgeIslands(m, foot0, Math.max(6, params.baseMargin));
       if (br.foot !== foot0) foot0.delete();
       foot = br.foot;
       if (br.islands) warnings.push(`Outline base: ${br.islands} island(s) of the map are too far from the rest to bridge; they print as separate tiles.`);
       const fb = foot.bounds();
       const usable: [number, number] = [params.bed.x - 2 * params.bedMargin, params.bed.y - 2 * params.bedMargin];
+      progress('geometry', 0.8, 'Base outline: cutting into bed-sized tiles');
       const t = tileFootprint(m, foot, usable);
       tiles = { cols: t.cols, rows: t.rows, w: t.bedW, h: t.bandH, ox: fb.min[0], oy: fb.min[1], outline: true };
       for (const pc of t.pieces) cells.push({ tag: pc.tag, rect: pc.cs, x0: pc.x, y0: pc.y, w: pc.w, h: pc.h });
