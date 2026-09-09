@@ -113,17 +113,46 @@ SELECT ?line ?lineLabel ?colour ?article (GROUP_CONCAT(DISTINCT ?termLabel; sepa
     for (const r of rows2) { const l = lines.find((x) => x.qid === r.line.value.split('/').pop()); if (l) l.stationCount = Number(r.n.value); }
   }
   // Wikipedia infobox "stations = N" (the figure operators publish), fetched per article.
-  await Promise.all(lines.filter((l) => l.article).map(async (l) => {
-    try {
-      const res = await f(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(l.article!)}&prop=wikitext&format=json&formatversion=2&redirects=1`, { headers: { 'User-Agent': UA } });
-      if (!res.ok) return;
-      const j = await res.json();
-      const text: string = j.parse?.wikitext ?? '';
-      const m = /\|\s*stations\s*=\s*(\d+)/i.exec(text);
-      if (m) l.wikipediaStations = Number(m[1]);
-    } catch { /* ignore */ }
-  }));
+  for (const l of lines) {
+    if (!l.article) continue;
+    try { await sleep(400); l.wikipediaStations = await wikipediaStationCount(l.article, f); } catch { /* ignore */ }
+  }
   return lines;
+}
+
+/** "stations = N" from the first infobox of an English Wikipedia article (largest value wins: extension infoboxes list a few). */
+export async function wikipediaStationCount(article: string, f: typeof fetch = fetch): Promise<number | undefined> {
+  const res = await f(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(article)}&prop=wikitext&format=json&formatversion=2&redirects=1`, { headers: { 'User-Agent': UA } });
+  if (!res.ok) return undefined;
+  const j = JSON.parse(await res.text());
+  const text: string = j.parse?.wikitext ?? '';
+  const head = text.slice(0, 20000);
+  let best: number | undefined;
+  for (const m of head.matchAll(/\|\s*stations\s*=\s*(\d+)/gi)) { const n = Number(m[1]); if (best === undefined || n > best) best = n; }
+  return best;
+}
+
+/** Fallback when a network item lists no matching line: search the line by its own name. */
+export async function findLineByName(name: string, f: typeof fetch = fetch): Promise<WikidataLine | undefined> {
+  const res = await f(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(name)}&language=en&format=json&limit=5`, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+  if (!res.ok) return undefined;
+  let j: any; try { j = JSON.parse(await res.text()); } catch { return undefined; }
+  const hit = (j.search ?? []).find((x: any) => /(line|route|metro|subway|light rail|speedline|tram)/i.test(`${x.label} ${x.description ?? ''}`));
+  if (!hit) return undefined;
+  const q = `SELECT ?line ?lineLabel ?colour ?article (GROUP_CONCAT(DISTINCT ?termLabel; separator="|") AS ?termini) (GROUP_CONCAT(DISTINCT ?diagram; separator="|") AS ?diagrams) WHERE {
+  VALUES ?line { wd:${hit.id} }
+  OPTIONAL { ?line wdt:P465 ?colour }
+  OPTIONAL { ?line wdt:P559 ?term . ?term rdfs:label ?termLabel FILTER(LANG(?termLabel) = "en") }
+  OPTIONAL { ?line wdt:P15 ?diagram }
+  OPTIONAL { ?article schema:about ?line ; schema:isPartOf <https://en.wikipedia.org/> }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+} GROUP BY ?line ?lineLabel ?colour ?article`;
+  const rows = await sparql(q, f);
+  if (!rows.length) return undefined;
+  const r = rows[0];
+  const line: WikidataLine = { qid: hit.id, label: r.lineLabel?.value ?? hit.label, colour: r.colour?.value ? '#' + r.colour.value.toLowerCase() : undefined, termini: (r.termini?.value ?? '').split('|').filter(Boolean), diagrams: (r.diagrams?.value ?? '').split('|').filter(Boolean).map((d: string) => decodeURIComponent(d.split('/').pop() ?? '')), article: r.article?.value ? decodeURIComponent(r.article.value.split('/wiki/').pop() ?? '') : undefined };
+  if (line.article) { try { line.wikipediaStations = await wikipediaStationCount(line.article, f); } catch { /* ignore */ } }
+  return line;
 }
 
 function refKey(s: string): string { return normalizeName(s).replace(/^(line|ligne|linea|linha|linie)/, ''); }
@@ -139,7 +168,8 @@ function matchLine(ref: string, name: string, cands: WikidataLine[]): WikidataLi
     const pool = clean.length ? clean : byRef;
     return pool.sort((a, b) => (b.stationCount ?? 0) - (a.stationCount ?? 0))[0];
   }
-  const byName = cands.find((c) => normalizeName(c.label) === normalizeName(name) || normalizeName(c.label).includes(normalizeName(name.split(':')[0])) && name.length > 4);
+  const nn = normalizeName(name.split(':')[0]);
+  const byName = cands.find((c) => { const cl = normalizeName(c.label); return cl === nn || (name.length > 4 && (cl.includes(nn) || (cl.length > 6 && nn.includes(cl)))); });
   if (byName) return byName;
   const loose = cands.filter((c) => normalizeName(c.label).endsWith(r) || normalizeName(c.label).includes(r + 'line') || normalizeName(c.label).includes('line' + r));
   return loose.length === 1 ? loose[0] : undefined;
@@ -162,7 +192,8 @@ export async function verifyNetwork(net: MetroNetwork, opts: { fetch?: typeof fe
   for (const ln of net.lines) {
     const osmStations = new Set(ln.sequences.flat()).size;
     const termini = [...new Set(ln.sequences.flatMap((s) => [s[0], s[s.length - 1]]))].map((id) => net.stations.find((s) => s.id === id)?.name ?? id);
-    const w = matchLine(ln.ref, ln.name, cands);
+    let w = matchLine(ln.ref, ln.name, cands);
+    if (!w) { try { await sleep(500); w = await findLineByName(ln.name, f); } catch { /* ignore */ } }
     const c: LineCheck = { ref: ln.ref, name: ln.name, osmStations, wikidata: w, status: 'unmatched', notes: [] };
     if (w) {
       c.status = 'pass';
@@ -170,7 +201,9 @@ export async function verifyNetwork(net: MetroNetwork, opts: { fetch?: typeof fe
       const source = w.wikipediaStations !== undefined ? 'Wikipedia' : 'Wikidata';
       if (official !== undefined) {
         c.stationDelta = osmStations - official;
-        if (Math.abs(c.stationDelta) > 2) { c.status = 'fail'; c.notes.push(`station count ${osmStations} vs ${source} ${official}`); }
+        // Wikidata's "connecting line" count includes planned/under-construction stations, so it can only warn.
+        const hard = source === 'Wikipedia';
+        if (Math.abs(c.stationDelta) > 2) { c.status = hard ? 'fail' : 'warn'; c.notes.push(`station count ${osmStations} vs ${source} ${official}${hard ? '' : ' (may include planned stations)'}`); }
         else if (c.stationDelta !== 0) { c.status = 'warn'; c.notes.push(`station count ${osmStations} vs ${source} ${official}`); }
       } else c.notes.push('no station count on Wikipedia/Wikidata');
       if (w.termini.length) {
