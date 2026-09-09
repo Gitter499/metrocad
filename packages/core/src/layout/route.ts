@@ -133,6 +133,50 @@ export interface RouteOptions {
   arcSegments: number;
   /** Detour distance (mm) for duplicate corridors between the same stations. */
   detour: number;
+  /** 'octilinear': 1-bend 45° paths between majors · 'smooth': follow the geographic path, angles snapped to `angleStep`. */
+  style?: 'octilinear' | 'smooth';
+  /** Angle quantum (degrees) for smooth corridors, e.g. 30. */
+  angleStep?: number;
+  /** Simplification tolerance (mm) for smooth corridors. */
+  simplifyTol?: number;
+}
+
+/** Douglas–Peucker simplification keeping the first and last points. */
+export function simplifyDP(pts: Vec2[], tol: number): Vec2[] {
+  if (pts.length < 3) return pts;
+  const a = pts[0], b = pts[pts.length - 1];
+  let idx = -1, dmax = 0;
+  for (let i = 1; i < pts.length - 1; i++) { const d = pointSegDistLocal(pts[i], a, b); if (d > dmax) { dmax = d; idx = i; } }
+  if (dmax > tol && idx > 0) {
+    const left = simplifyDP(pts.slice(0, idx + 1), tol), right = simplifyDP(pts.slice(idx), tol);
+    return left.slice(0, -1).concat(right);
+  }
+  return [a, b];
+}
+function pointSegDistLocal(p: Vec2, a: Vec2, b: Vec2): number {
+  const ab = sub(b, a); const l2 = dot(ab, ab);
+  if (l2 < 1e-12) return dist(p, a);
+  const t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / l2));
+  return dist(p, add(a, mul(ab, t)));
+}
+
+/**
+ * Snap every segment direction to a multiple of `stepDeg`, rebuild the chain, then spread the
+ * end-point error linearly over the vertices so both ends stay exactly where they were.
+ */
+export function snapAngles(pts: Vec2[], stepDeg: number): Vec2[] {
+  if (pts.length < 3) return pts;
+  const step = (stepDeg * Math.PI) / 180;
+  const out: Vec2[] = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const d = sub(pts[i], pts[i - 1]);
+    const L = len(d);
+    const ang = Math.round(angleOf(d) / step) * step;
+    out.push(add(out[i - 1], fromAngle(ang, L)));
+  }
+  const err = sub(pts[pts.length - 1], out[out.length - 1]);
+  const n = out.length - 1;
+  return out.map((q, i) => add(q, mul(err, i / n)));
 }
 
 /** Build corridor centre paths and per-line offset paths. Positions must already be in mm. */
@@ -149,7 +193,16 @@ export function buildCorridorGeometry(graph: StationGraph, opts: RouteOptions): 
     let center: Vec2[];
     const dup = pairCount.get(pairKey(c)) ?? 0;
     pairCount.set(pairKey(c), dup + 1);
-    if (dup === 0 || c.a === c.b) center = octilinearPath(A.pos, B.pos, prefer);
+    if (opts.style === 'smooth' && dup === 0 && c.a !== c.b && c.interior.length === 0) {
+      center = [A.pos, B.pos]; // adjacent majors: always a straight run
+    } else if (opts.style === 'smooth' && dup === 0 && c.a !== c.b) {
+      // Geographic path through the interior stations, simplified, angle-snapped, ends fixed.
+      const raw: Vec2[] = [A.pos, ...c.interior.map((id) => graph.nodes.get(id)!.pos), B.pos];
+      let simp = simplifyDP(dedupe(raw), opts.simplifyTol ?? 6);
+      if (opts.angleStep) simp = snapAngles(simp, opts.angleStep);
+      // Merge nearly-collinear vertices left over after snapping.
+      center = simplifyCollinear(dedupe(simp), 0.02);
+    } else if (dup === 0 || c.a === c.b) center = octilinearPath(A.pos, B.pos, prefer);
     else {
       // Bulge to the side of the geographic detour: A -> A+off -> B+off -> B, off snapped to 45°.
       const mid = mul(add(A.pos, B.pos), 0.5);

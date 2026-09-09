@@ -1,7 +1,7 @@
 /** Layout orchestration: network -> MapLayout (mm). */
 import type { DesignParams, LayoutLabel, LayoutLine, LayoutStation, MapLayout, MetroNetwork, Vec2 } from '../types.js';
 import { buildStationGraph, type StationGraph } from './graph.js';
-import { layoutReducedGraph, snapToGrid, straighten } from './force.js';
+import { layoutReducedGraph, snapToGrid, straighten, applyFisheye, relaxMajors } from './force.js';
 import { buildCorridorGeometry, splitForBed, paramOf, pointAt, dedupe, pathLength, type CorridorGeometry } from './route.js';
 import { placeLabels, type LabelCandidateInput, type Obstacles } from './labels.js';
 import { bboxOf, dist, add, sub, mul, fromAngle } from '../vec.js';
@@ -43,9 +43,16 @@ export function dotRadius(p: DesignParams): number {
 export function computeLayout(net: MetroNetwork, params: DesignParams, font: TextFont, log?: (m: string) => void): LayoutResult {
   const graph = buildStationGraph(net);
   const lo = params.layout;
-  const strength = lo.mode === 'geographic' ? 0 : lo.schematicStrength;
-  layoutReducedGraph(graph, { strength, fisheye: lo.fisheye, iterations: lo.iterations, seed: lo.seed, lengthExponent: 0.8, anchor: 0.12, fidelityMin: 0.6, fidelityMax: 1.7 });
-  if (strength > 0.5) { snapToGrid(graph, 1); straighten(graph, 1, 4); }
+  const semi = lo.mode === 'semi';
+  const strength = lo.mode === 'geographic' || semi ? 0 : lo.schematicStrength;
+  if (semi) {
+    // Keep the geographic shape: fisheye on every station, then only spread majors that sit too close.
+    applyFisheye(graph.nodes.values(), lo.fisheye);
+    relaxMajors(graph, lo.iterations);
+  } else {
+    layoutReducedGraph(graph, { strength, fisheye: lo.fisheye, iterations: lo.iterations, seed: lo.seed, lengthExponent: 0.8, anchor: 0.12, fidelityMin: 0.6, fidelityMax: 1.7 });
+    if (strength > 0.5) { snapToGrid(graph, 1); straighten(graph, 1, 4); }
+  }
 
   // Regular (interior) stations: positions come from corridor paths later.
   const majors = [...graph.nodes.values()].filter((n) => n.major);
@@ -112,9 +119,11 @@ function buildAtScale(
   const g: StationGraph = { nodes: new Map(), corridors: graph.corridors, incident: graph.incident };
   for (const [id, n] of graph.nodes) g.nodes.set(id, { ...n, pos: [(n.pos[0] - unitBox.x) * unitMm + ox, (n.pos[1] - unitBox.y) * unitMm + oy] });
 
+  const semi = params.layout.mode === 'semi';
   const corridors = buildCorridorGeometry(g, {
     lineWidth: params.lineWidth, lineGap: params.lineGap, cornerRadius: params.cornerRadiusFactor * params.lineWidth,
     lineOrder, arcSegments: params.quality === 'print' ? 10 : 5, detour: unitMm * 1.5,
+    style: semi ? 'smooth' : 'octilinear', angleStep: semi ? 30 : undefined, simplifyTol: semi ? Math.max(4, unitMm * 0.35) : undefined,
   });
 
   // Station records

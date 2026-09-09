@@ -17,7 +17,7 @@ export const DEFAULT_PARAMS: DesignParams = {
   lineWidth: 6,
   lineHeight: 2.0,
   lineGap: 1.4,
-  cornerRadiusFactor: 2.2,
+  cornerRadiusFactor: 3,
 
   dotFactor: 0.62,
   ringWidth: 1.2,
@@ -45,9 +45,9 @@ export const DEFAULT_PARAMS: DesignParams = {
   },
 
   layout: {
-    mode: 'schematic',
+    mode: 'semi',
     schematicStrength: 1,
-    fisheye: 0.55,
+    fisheye: 0.7,
     minSpacing: 1,
     iterations: 500,
     seed: 7,

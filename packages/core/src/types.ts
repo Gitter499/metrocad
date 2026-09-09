@@ -47,7 +47,8 @@ export interface MetroNetwork {
 
 /* ----------------------------- Layout ----------------------------- */
 
-export type LayoutMode = 'geographic' | 'schematic';
+/** semi: geographic shape with an enlarged centre, corridors smoothed to 30° steps (official-map look) · schematic: strict octilinear grid · geographic: raw positions. */
+export type LayoutMode = 'geographic' | 'schematic' | 'semi';
 
 export interface LayoutOptions {
   mode: LayoutMode;

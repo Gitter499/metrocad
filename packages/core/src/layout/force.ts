@@ -279,3 +279,45 @@ export function straighten(graph: StationGraph, cell: number, rounds = 4, length
     if (!improved) break;
   }
 }
+
+
+/**
+ * Semi-geographic mode: majors keep their (fisheye) geographic positions, moving only as much as needed
+ * so no two markers overlap and no major sits on a foreign corridor. Units: 1 = station spacing.
+ */
+export function relaxMajors(graph: StationGraph, iterations: number): void {
+  const { nodes, corridors } = graph;
+  const majors = [...nodes.values()].filter((n) => n.major);
+  if (majors.length < 2) return;
+  // normalise so the median corridor length is 1 unit
+  const lens: number[] = [];
+  for (const c of corridors) { const d = dist(nodes.get(c.a)!.pos, nodes.get(c.b)!.pos); if (d > 1e-6) lens.push(d / Math.max(1, Math.sqrt(c.interior.length + 1))); }
+  lens.sort((a, b) => a - b);
+  const k = 1 / (lens[Math.floor(lens.length / 2)] || 1);
+  for (const n of nodes.values()) n.pos = [n.pos[0] * k, n.pos[1] * k];
+  const anchor = new Map(majors.map((n) => [n.id, [...n.pos] as Vec2]));
+  const radius = majors.map((n) => 0.45 + 0.2 * Math.max(0, n.lines.length - 1));
+  const iters = Math.max(40, Math.min(iterations, 300));
+  for (let it = 0; it < iters; it++) {
+    const disp: Vec2[] = majors.map(() => [0, 0]);
+    for (let i = 0; i < majors.length; i++) for (let j = i + 1; j < majors.length; j++) {
+      const d = sub(majors[j].pos, majors[i].pos);
+      const L = len(d), need = radius[i] + radius[j];
+      if (L < need) {
+        const push = L < 1e-6 ? [(need) * 0.5, 0] as Vec2 : mul(d, ((need - L) / L) * 0.5);
+        disp[i][0] -= push[0]; disp[i][1] -= push[1]; disp[j][0] += push[0]; disp[j][1] += push[1];
+      }
+    }
+    for (let i = 0; i < majors.length; i++) {
+      const a = sub(anchor.get(majors[i].id)!, majors[i].pos);
+      disp[i][0] += a[0] * 0.05; disp[i][1] += a[1] * 0.05;
+      const l = len(disp[i]); const step = l > 0.2 ? mul(disp[i], 0.2 / l) : disp[i];
+      majors[i].pos = add(majors[i].pos, step);
+    }
+  }
+  // Interior stations follow their neighbours' displacement so corridors keep their shape.
+  for (const c of corridors) {
+    const da = sub(nodes.get(c.a)!.pos, anchor.get(c.a)!), db = sub(nodes.get(c.b)!.pos, anchor.get(c.b)!);
+    c.interior.forEach((id, i) => { const t = (i + 1) / (c.interior.length + 1); const n = nodes.get(id)!; n.pos = add(n.pos, add(mul(da, 1 - t), mul(db, t))); });
+  }
+}
