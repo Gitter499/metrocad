@@ -397,6 +397,10 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
   const colourStats = new Map<string, { len: number; maxW: number; n: number }>();
   for (const [c, list] of ex.strokes) { let len = 0, maxW = 0; for (const p of list) { len += pathLength(p.pts); maxW = Math.max(maxW, p.width); } colourStats.set(c, { len, maxW, n: list.length }); }
   const candidates = [...colourStats.entries()].filter(([c, s]) => s.len > 50 && c !== '#ffffff');
+  // Colours that are only ever short closed shapes (station outlines in black) are not route lines.
+  const longLen = new Map<string, number>();
+  for (const [c, list] of ex.strokes) { const minL = Math.max(ex.width, ex.height) * 0.03; longLen.set(c, list.reduce((a, p) => a + (pathLength(p.pts) > minL ? pathLength(p.pts) : 0), 0)); }
+  const routeLike = (c: string) => (longLen.get(c) ?? 0) > Math.max(ex.width, ex.height) * 0.2;
   const tol = opts.colorTolerance ?? 230;
   // Station label positions in SVG units, per station name.
   const labelKey = (name: string) => normalizeName(expandAbbrev(name));
@@ -511,8 +515,12 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
     const pts = net.stations.filter((st) => st.lines.includes(ln.id)).map(posOf).filter(Boolean) as Vec2[];
     let best: { c: string; score: number; d: number; hits: number } | undefined;
     const tried: string[] = [];
+    // Two passes: colours near the line's own first; then, if nothing near fits, any colour most of its stations sit
+    // on (PRT's Silver line runs on the strokes an older drawing paints pure blue).
+    for (const pass of [0, 1]) {
+    if (pass === 1 && best && (best.score > 0.15 || best.hits >= 3)) break;
     for (const [c] of candidates) {
-      const d = colorDist(ln.color, c); if (d > tol) continue;
+      const d = colorDist(ln.color, c); if (pass === 0 ? d > tol : d <= tol || !routeLike(c)) continue;
       let hits = 0; for (const p of pts) if (near(c, p, unitR)) hits++;
       // Hits weigh more the closer the colour is to the line's own: a parallel line of another colour running
       // past the same labels must not win just because its strokes are nearer.
@@ -520,7 +528,9 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
       // tags as light blue, but two lines that share an OSM colour are told apart by which strokes their stations sit on).
       const score = (hits / Math.max(1, pts.length)) * (0.4 + 0.6 * Math.max(0, 1 - d / tol));
       tried.push(`${c}:${hits}/${d.toFixed(0)}`);
+      if (pass === 1 && hits / Math.max(1, pts.length) < 0.5) continue;
       if (!best || score > best.score) best = { c, score, d, hits };
+    }
     }
     if (typeof process !== 'undefined' && process.env?.SVG_DEBUG === 'colours') log(`  ${ln.ref} candidates ${tried.join(' ')}`);
     // Enough of the line's stations sit on strokes of this colour: a share of them, or at least three (long lines

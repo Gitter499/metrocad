@@ -9,6 +9,12 @@ import philadelphiaUrl from '@metrocad/core/fixtures/philadelphia.json?url';
 import philadelphiaOfficialUrl from '@metrocad/core/fixtures/philadelphia.official.json?url';
 import parisOfficialUrl from '@metrocad/core/fixtures/paris.official.json?url';
 import londonOfficialUrl from '@metrocad/core/fixtures/london.official.json?url';
+import moscowOfficialUrl from '@metrocad/core/fixtures/moscow.official.json?url';
+import pittsburghOfficialUrl from '@metrocad/core/fixtures/pittsburgh.official.json?url';
+import atlantaOfficialUrl from '@metrocad/core/fixtures/atlanta.official.json?url';
+import tokyoOfficialUrl from '@metrocad/core/fixtures/tokyo.official.json?url';
+import viennaOfficialUrl from '@metrocad/core/fixtures/vienna.official.json?url';
+import sanFranciscoOfficialUrl from '@metrocad/core/fixtures/san-francisco.official.json?url';
 import pittsburghUrl from '@metrocad/core/fixtures/pittsburgh.json?url';
 import tokyoUrl from '@metrocad/core/fixtures/tokyo.json?url';
 import moscowUrl from '@metrocad/core/fixtures/moscow.json?url';
@@ -26,6 +32,12 @@ const OFFICIAL: Record<string, { url: string; title: string }> = {
   philadelphia: { url: philadelphiaOfficialUrl, title: 'SEPTA Regional Rail & Rail Transit map (June 2026), geometry only' },
   paris: { url: parisOfficialUrl, title: 'Plan schématique du réseau de Paris (Wikimedia Commons, CC BY-SA), geometry only' },
   london: { url: londonOfficialUrl, title: 'London Underground, Overground, DLR and Elizabeth line map (Wikimedia Commons, CC BY-SA), geometry only' },
+  moscow: { url: moscowOfficialUrl, title: 'Moscow Metro map, sameboat schematic (Wikimedia Commons, CC BY-SA), geometry only' },
+  pittsburgh: { url: pittsburghOfficialUrl, title: 'Pittsburgh T map (Wikimedia Commons, CC BY-SA), geometry only' },
+  atlanta: { url: atlantaOfficialUrl, title: 'MARTA rail map (Wikimedia Commons, CC BY-SA), geometry only' },
+  tokyo: { url: tokyoOfficialUrl, title: 'Tokyo subway map (Wikimedia Commons, CC BY-SA), geometry only' },
+  vienna: { url: viennaOfficialUrl, title: 'U-Bahn Wien Netzplan (Wikimedia Commons, CC BY-SA), geometry only' },
+  'san-francisco': { url: sanFranciscoOfficialUrl, title: 'BART map (Wikimedia Commons, CC BY-SA), geometry only' },
 };
 const FIXTURES: Record<string, string> = { paris: parisUrl, london: londonUrl, philadelphia: philadelphiaUrl, pittsburgh: pittsburghUrl, tokyo: tokyoUrl, moscow: moscowUrl, vienna: viennaUrl, atlanta: atlantaUrl, 'san-francisco': sanFranciscoUrl };
 
