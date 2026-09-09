@@ -4,31 +4,31 @@
   "width": 1200,
   "lineWidth": 8,
   "labelFontSize": 7.3,
-  "height": 795,
+  "height": 1070,
   "lines": 13,
   "stations": 215,
-  "labels": 119,
-  "parts": 710,
+  "labels": 170,
+  "parts": 815,
   "byKind": {
-    "line": 148,
-    "ring": 74,
-    "plug": 74,
-    "dot": 141,
-    "labelPlate": 119,
-    "labelText": 119,
-    "tile": 35
+    "line": 140,
+    "ring": 71,
+    "plug": 71,
+    "dot": 144,
+    "labelPlate": 170,
+    "labelText": 170,
+    "tile": 49
   },
-  "plates": 54,
-  "tiles": "7×5",
-  "grams": 2106,
-  "costUsd": 46.34,
-  "printHours": 144.7,
+  "plates": 75,
+  "tiles": "7×7",
+  "grams": 2810,
+  "costUsd": 61.81,
+  "printHours": 189,
   "farms": {
-    "1 × A1 mini": 151.8,
-    "3 × A1 mini": 50.8,
-    "3 × A1 mini + 1 × S3": 40.2,
-    "9 × A1 mini + 2 × S3": 14.6
+    "1 × A1 mini": 198.9,
+    "3 × A1 mini": 66.3,
+    "3 × A1 mini + 1 × S3": 52.6,
+    "9 × A1 mini + 2 × S3": 19.1
   },
-  "assemblyHours": 9.6,
-  "buildSec": 68
+  "assemblyHours": 10.8,
+  "buildSec": 89
 }
