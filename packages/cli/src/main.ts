@@ -32,6 +32,7 @@ usage: metrocad <city> [options]
   --clearance <mm>     fit clearance (default 0.15)
   --label-mode auto|print|tape   raised printed letters, or pockets for label-maker tape (auto: tape when < 4.5 mm)
   --tape-width <mm>    label-maker tape width for tape mode (default 12)
+  --map-svg <file>     official/community schematic SVG: use its geometry instead of the algorithmic layout
   --font <file.ttf>    custom font (e.g. Noto Sans JP for CJK names)
   --fixture <name>     use a bundled network fixture instead of fetching (paris, london)
   --network <file>     use a saved network JSON
@@ -95,8 +96,9 @@ const params: PartialParams = {
 const wasm = await Module();
 wasm.setup();
 let lastStage = '';
+const mapSvg = opts['map-svg'] ? fs.readFileSync(opts['map-svg'] as string, 'utf8') : undefined;
 const result = buildFromNetwork(net, {
-  params, font, manifold: wasm,
+  params, font, manifold: wasm, mapSvg,
   progress: (stage, frac, detail) => {
     const line = `${stage.padEnd(9)} ${(frac * 100).toFixed(0).padStart(3)}%  ${detail ?? ''}`;
     if (stage !== lastStage) { process.stderr.write('\n'); lastStage = stage; }

@@ -13,7 +13,7 @@ export interface DisplayPart {
 }
 
 export type ToWorker =
-  | { type: 'build'; id: number; city?: string; fixture?: string; modes?: TransitMode[]; params: PartialParams }
+  | { type: 'build'; id: number; city?: string; fixture?: string; modes?: TransitMode[]; params: PartialParams; officialMap: 'auto' | 'none' | 'custom'; mapSvg?: string }
   | { type: 'bundle'; id: number; individualStls: boolean }
   | { type: 'ar'; id: number }
   | { type: 'slice'; id: number; changeoverMin: number }
@@ -22,7 +22,7 @@ export type ToWorker =
 
 export type FromWorker =
   | { type: 'status'; id: number; stage: string; fraction: number; detail?: string }
-  | { type: 'built'; id: number; parts: DisplayPart[]; layout: MapLayout; params: DesignParams; plates: Plate[]; stats: BuildStats; warnings: string[]; svg: string; place: string; tiles: { cols: number; rows: number; w: number; h: number } }
+  | { type: 'built'; id: number; parts: DisplayPart[]; layout: MapLayout; params: DesignParams; plates: Plate[]; stats: BuildStats; warnings: string[]; svg: string; place: string; tiles: { cols: number; rows: number; w: number; h: number }; mapSource?: string }
   | { type: 'bundle'; id: number; zip: Uint8Array; filename: string }
   | { type: 'ar'; id: number; glb: Uint8Array; usdz: Uint8Array }
   | { type: 'sliced'; id: number; plates: { id: string; name: string; color: string; colorName: string; timeSec: number; filamentGrams: number; layers: number; printer: string; printerId: string }[]; totalSec: number; totalGrams: number; makespanSec: number; perPrinter: { printer: string; busySec: number; jobs: string[] }[]; zip: Uint8Array }

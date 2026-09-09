@@ -3,6 +3,7 @@ import type { ManifoldToplevel } from 'manifold-3d';
 import type { BuildResult, BuildStats, DesignParams, MetroNetwork, ProgressFn } from './types.js';
 import { withDefaults, type PartialParams } from './defaults.js';
 import { computeLayout, type LayoutResult } from './layout/index.js';
+import { layoutFromSvg, type SvgImportReport } from './svgimport.js';
 import { buildParts, type TileGrid } from './geometry.js';
 import { packPlates } from './pack.js';
 import type { TextFont } from './text.js';
@@ -12,11 +13,14 @@ export interface BuildOptions {
   font: TextFont;
   manifold: ManifoldToplevel;
   progress?: ProgressFn;
+  /** Official/community schematic SVG: its geometry, station positions and label positions replace the algorithmic layout. */
+  mapSvg?: string;
 }
 
 export interface FullBuildResult extends BuildResult {
   layout: LayoutResult;
   tiles: TileGrid;
+  svgImport?: SvgImportReport;
 }
 
 /** Approximate printed mass: solid-ish parts at ~90 %, tiles at ~45 % (walls + 15 % infill). PLA 1.24 g/cm³. */
@@ -31,8 +35,18 @@ export function buildFromNetwork(net: MetroNetwork, opts: BuildOptions): FullBui
   const params = withDefaults(opts.params ?? {});
   const progress = opts.progress ?? (() => {});
   const warnings: string[] = [];
-  progress('layout', 0, 'Computing schematic layout');
-  const layout = computeLayout(net, params, opts.font, (m) => warnings.push(m));
+  let layout: LayoutResult;
+  let svgImport: SvgImportReport | undefined;
+  if (opts.mapSvg) {
+    progress('layout', 0, 'Importing official map geometry');
+    const r = layoutFromSvg(opts.mapSvg, net, params, opts.font, { log: (m) => progress('layout', 0.5, m) });
+    warnings.push(`Layout imported from the official map drawing: ${r.report.matchedStations}/${net.stations.length} stations matched`);
+    layout = r.layout; svgImport = r.report;
+    if (r.report.unmatchedStations.length) warnings.push(`${r.report.unmatchedStations.length} stations not found in the SVG: ${r.report.unmatchedStations.slice(0, 8).join(', ')}${r.report.unmatchedStations.length > 8 ? '…' : ''}`);
+  } else {
+    progress('layout', 0, 'Computing schematic layout');
+    layout = computeLayout(net, params, opts.font, (m) => warnings.push(m));
+  }
   progress('layout', 1, `${layout.stations.length} stations, ${layout.labels.length} labels`);
   const geo = buildParts(opts.manifold, layout, params, opts.font, { progress });
   warnings.push(...geo.warnings);
@@ -52,5 +66,5 @@ export function buildFromNetwork(net: MetroNetwork, opts: BuildOptions): FullBui
     estimatedGrams: estimateGrams(geo.parts),
     buildMs: performance.now() - t0,
   };
-  return { network: net, layout, params, parts: geo.parts, plates, stats, warnings, tiles: geo.tiles };
+  return { network: net, layout, params, parts: geo.parts, plates, stats, warnings, tiles: geo.tiles, svgImport };
 }

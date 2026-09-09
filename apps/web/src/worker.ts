@@ -7,7 +7,7 @@ import parisUrl from '@metrocad/core/fixtures/paris.json?url';
 import londonUrl from '@metrocad/core/fixtures/london.json?url';
 import {
   fetchCityNetwork, buildFromNetwork, buildBundle, zipBundle, TextFont, renderSvg, partsToGlb, partsToUsdz,
-  slugify, sliceAndSchedule, buildAssemblyPlan, renderAssemblyPlanSvg, type FullBuildResult, type MetroNetwork, type FarmResult, type Part,
+  slugify, sliceAndSchedule, buildAssemblyPlan, renderAssemblyPlanSvg, knownMapFor, commonsFileUrl, type FullBuildResult, type MetroNetwork, type FarmResult, type Part,
 } from '@metrocad/core';
 import type { ToWorker, FromWorker, DisplayPart } from './protocol.js';
 
@@ -50,8 +50,22 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       }
       currentCity = msg.city ?? msg.fixture ?? 'map';
       post({ type: 'status', id, stage: 'fetch', fraction: 1, detail: `${net.displayName}: ${net.lines.length} lines, ${net.stations.length} stations` });
+      // Official map geometry: user-supplied SVG, or a known community schematic from Wikimedia Commons.
+      let mapSvg = msg.officialMap === 'custom' ? msg.mapSvg : undefined;
+      let mapSource: string | undefined = mapSvg ? 'your SVG' : undefined;
+      if (msg.officialMap === 'auto') {
+        const known = knownMapFor(currentCity, net.lines[0]?.network) ?? knownMapFor(net.displayName);
+        if (known) {
+          try {
+            post({ type: 'status', id, stage: 'fetch', fraction: 0.9, detail: `Fetching official-style map: ${known.title}` });
+            const url = await commonsFileUrl(known.file);
+            const res = await fetch(url);
+            if (res.ok) { mapSvg = await res.text(); mapSource = `${known.title} (${known.license})`; }
+          } catch (e) { console.warn('official map fetch failed', e); }
+        }
+      }
       current = buildFromNetwork(net, {
-        params: msg.params, font: font!, manifold: manifold!,
+        params: msg.params, font: font!, manifold: manifold!, mapSvg,
         progress: (stage, fraction, detail) => post({ type: 'status', id, stage, fraction, detail }),
       });
       currentSliced = undefined;
@@ -62,7 +76,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       for (const p of copies) transfer.push(p.mesh.positions.buffer, p.mesh.indices.buffer);
       const { graph, corridors, ...layout } = current.layout as any;
       const svg = renderSvg(current.layout, current.params, { fontDataUrl: undefined, fontFamily: 'Inter' });
-      post({ type: 'built', id, parts: copies, layout, params: current.params, plates: current.plates, stats: current.stats, warnings: current.warnings, svg, place: net.displayName, tiles: current.tiles }, transfer);
+      post({ type: 'built', id, parts: copies, layout, params: current.params, plates: current.plates, stats: current.stats, warnings: current.warnings, svg, place: net.displayName, tiles: current.tiles, mapSource }, transfer);
     } else if (msg.type === 'bundle') {
       if (!current) throw new Error('Nothing built yet');
       const files = buildBundle(current, {

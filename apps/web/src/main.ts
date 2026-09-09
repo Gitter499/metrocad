@@ -28,6 +28,8 @@ app.innerHTML = `
 <div class="panel glass">
   <input id="city" type="text" placeholder="City" value="Paris" autocomplete="off" />
   <div class="chips" id="chips"></div>
+  <label class="field"><span>Official map</span><select id="officialMap" style="width:150px"><option value="auto">Auto (Commons schematic)</option><option value="none">Generated layout</option><option value="custom">My SVG file…</option></select></label>
+  <input id="mapFile" type="file" accept=".svg,image/svg+xml" style="display:none">
   <button class="go" id="go">Generate</button>
   <div class="progress"><div id="bar"></div></div>
   <div class="statusline" id="status"></div>
@@ -97,6 +99,9 @@ function setStatus(text: string, fraction?: number) { $('status').textContent = 
 const featured: [string, string][] = [['Paris', 'paris'], ['London', 'london'], ['New York', ''], ['Tokyo', ''], ['Berlin', ''], ['Madrid', ''], ['Seoul', ''], ['Mexico City', ''], ['Moscow', ''], ['Washington', '']];
 $('chips').innerHTML = featured.map(([n, f]) => `<span class="chip" data-city="${n}" data-fixture="${f}">${n}</span>`).join('');
 $('chips').querySelectorAll<HTMLElement>('.chip').forEach((c) => c.addEventListener('click', () => { ($('city') as HTMLInputElement).value = c.dataset.city!; generate(c.dataset.fixture || undefined); }));
+let customSvg: string | undefined;
+$('officialMap').addEventListener('change', () => { $('mapFile').style.display = val('officialMap') === 'custom' ? '' : 'none'; });
+$('mapFile').addEventListener('change', async () => { const f = ($('mapFile') as HTMLInputElement).files?.[0]; if (f) { customSvg = await f.text(); setStatus(`Loaded ${f.name}`); } });
 
 const preview = new Preview($('gl') as HTMLCanvasElement);
 const beds = new PlatesView($('glbeds') as HTMLCanvasElement);
@@ -135,7 +140,8 @@ async function generate(fixture?: string) {
   const t0 = performance.now();
   try {
     const usedFixture = fixture && city.toLowerCase() === fixture ? fixture : undefined;
-    const m = (await call({ type: 'build', city, fixture: usedFixture, modes, params: params() })) as Extract<FromWorker, { type: 'built' }>;
+    const officialMap = val('officialMap') as 'auto' | 'none' | 'custom';
+    const m = (await call({ type: 'build', city, fixture: usedFixture, modes, params: params(), officialMap, mapSvg: officialMap === 'custom' ? customSvg : undefined })) as Extract<FromWorker, { type: 'built' }>;
     built = m; showResult(m, performance.now() - t0);
   } catch (e: any) { setStatus(`Error: ${e.message}`, 0); console.error(e); } finally { go.disabled = false; }
 }
@@ -146,7 +152,7 @@ const fmtTime = (sec: number) => { const h = Math.floor(sec / 3600), m = Math.ro
 
 function showResult(m: Extract<FromWorker, { type: 'built' }>, ms: number) {
   const s = m.stats;
-  setStatus(`${m.place.split(',')[0]} · ${(ms / 1000).toFixed(1)} s`, 1);
+  setStatus(`${m.place.split(',')[0]} · ${(ms / 1000).toFixed(1)} s${m.mapSource ? ` · geometry from ${m.mapSource}` : ''}`, 1);
   preview.setParts(m.parts, m.layout.width, m.layout.height);
   const bedName = m.plates.length ? `${m.plates[0].bed.x} × ${m.plates[0].bed.y}` : '';
   beds.setPlates(m.plates, m.parts, bedName);
@@ -167,7 +173,7 @@ function showResult(m: Extract<FromWorker, { type: 'built' }>, ms: number) {
     ['Filament', `≈ ${Math.round(s.estimatedGrams)} g`],
   ];
   $('stats').innerHTML = rows.map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('');
-  $('warnings').innerHTML = m.warnings.filter((w) => !/could not be labelled/.test(w)).map((w) => `<div class="warn">${w}</div>`).join('');
+  $('warnings').innerHTML = m.warnings.filter((w) => !/could not be labelled|^line /.test(w)).map((w) => `<div class="warn">${w}</div>`).join('');
   $('pane-map').innerHTML = m.svg;
   $('pane-ar').innerHTML = '';
   if (activeTab === 'ar') prepareAr();

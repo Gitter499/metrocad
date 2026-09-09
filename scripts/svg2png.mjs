@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 const [inp, out, wArg] = process.argv.slice(2);
 const svg = fs.readFileSync(inp, 'utf8');
-const m = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+const m = /viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/.exec(svg) ?? (() => { const w = /width="([\d.]+)/.exec(svg), h = /height="([\d.]+)/.exec(svg); return [null, w[1], h[1]]; })();
 const W = Number(wArg ?? 1800), H = Math.round((W * Number(m[2])) / Number(m[1]));
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
