@@ -1,5 +1,9 @@
 /** Font handling: measure text and produce glyph outline polygons (mm, y-up) via opentype.js. */
-import { parse as parseFont, type Font, type Glyph } from 'opentype.js';
+import * as opentypeNs from 'opentype.js';
+import type { Font, Glyph } from 'opentype.js';
+
+// Works with both the CJS build (Node) and the ESM build (bundlers).
+const parseFont: typeof opentypeNs.parse = (opentypeNs as any).parse ?? (opentypeNs as any).default?.parse;
 import type { Vec2 } from './types.js';
 
 export interface TextMetrics {

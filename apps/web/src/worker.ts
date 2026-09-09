@@ -82,8 +82,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
     } else if (msg.type === 'slice') {
       if (!current) throw new Error('Nothing built yet');
       const core: any = await import('@metrocad/core');
-      if (!core.slicePlate) throw new Error('Slicer not available in this build');
-      const printer = core.PRINTERS?.[msg.printerId] ?? core.getPrinter?.(msg.printerId);
+      const printer = core.getPrinterProfile(msg.printerId);
       const process = core.processFor(printer);
       const files: Record<string, Uint8Array> = {};
       const out: any[] = [];

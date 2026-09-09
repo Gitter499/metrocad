@@ -17,3 +17,4 @@ export * from './export/usdz.js';
 export * from './pack.js';
 export * from './pipeline.js';
 export * from './bundle.js';
+export * from './slicer/index.js';

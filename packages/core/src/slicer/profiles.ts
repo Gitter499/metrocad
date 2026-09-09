@@ -194,8 +194,21 @@ const GENERIC_MARLIN: PrinterProfile = {
   ].join('\n'),
 };
 
+/** Bambu Lab P1S (also fine for P1P / X1C): bigger bed, same G-code flavour. */
+const BAMBU_P1S: PrinterProfile = {
+  ...BAMBU_A1_MINI,
+  id: 'bambu-p1s',
+  name: 'Bambu Lab P1S',
+  bed: { x: 256, y: 256, z: 256 },
+  maxSpeed: 400,
+  accel: 8000,
+  travelSpeed: 400,
+  startGcode: BAMBU_A1_MINI.startGcode.replace('A1 mini', 'P1S').replace('G1 X170 E14 F1200', 'G1 X240 E20 F1200').replace('G1 X15 E28 F1200', 'G1 X15 E40 F1200'),
+};
+
 export const PRINTER_PROFILES: Record<string, PrinterProfile> = {
   [BAMBU_A1_MINI.id]: BAMBU_A1_MINI,
+  [BAMBU_P1S.id]: BAMBU_P1S,
   [ULTIMAKER_S3.id]: ULTIMAKER_S3,
   [GENERIC_MARLIN.id]: GENERIC_MARLIN,
 };

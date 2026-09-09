@@ -27,19 +27,22 @@ console.log('status:', await page.textContent('#status'));
 await page.waitForTimeout(1500);
 await page.screenshot({ path: path.join(outDir, 'app-3d-preview.png') });
 if (which === 'all') {
-  await page.click('.tab[data-tab="plates"]'); await page.waitForTimeout(800);
-  await page.screenshot({ path: path.join(outDir, 'app-plates.png') });
-  await page.click('.tab[data-tab="map"]'); await page.waitForTimeout(800);
-  await page.screenshot({ path: path.join(outDir, 'app-map.png') });
-  await page.click('.tab[data-tab="ar"]');
-  await page.waitForFunction(() => !!document.querySelector('model-viewer'), null, { timeout: 120000 }).catch(() => console.log('AR timeout'));
-  await page.waitForTimeout(4000);
-  await page.screenshot({ path: path.join(outDir, 'app-ar.png') });
-  await page.click('.tab[data-tab="3d"]'); await page.waitForTimeout(500);
-  // close-up: zoom the camera
-  await page.mouse.move(900, 500); for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, -300); await page.waitForTimeout(60); }
-  await page.waitForTimeout(800);
+  const tab = async (name) => { await page.click(`#tabs button[data-tab="${name}"]`); await page.waitForTimeout(900); };
+  await page.click('#dock button[data-view="closeup"]'); await page.waitForTimeout(700);
   await page.screenshot({ path: path.join(outDir, 'app-3d-closeup.png') });
+  await page.click('#dock button[data-view="front"]'); await page.waitForTimeout(700);
+  await page.screenshot({ path: path.join(outDir, 'app-3d-front.png') });
+  await page.click('#dock button[data-view="angle"]');
+  await tab('beds'); await page.waitForTimeout(1500);
+  await page.screenshot({ path: path.join(outDir, 'app-print-beds.png') });
+  await page.evaluate(() => document.querySelectorAll('#bedlist button')[30]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await page.waitForTimeout(1200);
+  await page.screenshot({ path: path.join(outDir, 'app-print-bed-focus.png') });
+  await tab('map');
+  await page.screenshot({ path: path.join(outDir, 'app-map.png') });
+  await tab('ar');
+  await page.waitForFunction(() => !!document.querySelector('model-viewer'), null, { timeout: 180000 }).catch(() => console.log('AR timeout'));
+  await page.waitForTimeout(5000);
+  await page.screenshot({ path: path.join(outDir, 'app-ar.png') });
 }
 await browser.close();
 server.close();

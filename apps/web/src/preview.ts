@@ -22,7 +22,7 @@ export class Preview {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.toneMappingExposure = 0.95;
     this.camera = new THREE.PerspectiveCamera(38, 1, 10, 20000);
     this.camera.position.set(0, 0, 1700);
     this.controls = new OrbitControls(this.camera, canvas);
@@ -34,7 +34,7 @@ export class Preview {
     this.scene.background = new THREE.Color(0xe9e6e0);
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    (this.scene as any).environmentIntensity = 0.35;
+    (this.scene as any).environmentIntensity = 0.18;
 
     // Room
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xf1eee8, roughness: 0.95, metalness: 0 });
@@ -49,9 +49,9 @@ export class Preview {
     this.scene.add(this.floor);
 
     // Lights
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x8d7b68, 0.25);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x8d7b68, 0.35);
     this.scene.add(hemi);
-    const key = new THREE.DirectionalLight(0xfff4e6, 2.6);
+    const key = new THREE.DirectionalLight(0xfff4e6, 2.0);
     key.position.set(-900, 1400, 1600);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
@@ -128,13 +128,22 @@ export class Preview {
     this.frameMap();
   }
 
-  frameMap() {
+  private fitDistance() {
     const { w, h } = this.size;
-    const dist = Math.max(w / this.camera.aspect, h) / (2 * Math.tan((this.camera.fov * Math.PI) / 360)) * 1.12;
-    this.camera.position.set(w * 0.08, -h * 0.05, dist);
-    this.controls.target.set(0, 0, 0);
+    return Math.max(w / this.camera.aspect, h) / (2 * Math.tan((this.camera.fov * Math.PI) / 360)) * 1.12;
+  }
+
+  /** Camera presets: 'front', 'angle' (oblique, shows the relief), 'closeup'. */
+  view(preset: 'front' | 'angle' | 'closeup' = 'angle') {
+    const { w, h } = this.size;
+    const d = this.fitDistance();
+    if (preset === 'front') { this.camera.position.set(0, 0, d); this.controls.target.set(0, 0, 0); }
+    else if (preset === 'angle') { this.camera.position.set(-d * 0.58, -d * 0.22, d * 0.8); this.controls.target.set(0, 0, 0); }
+    else { const cx = w * 0.05, cy = h * 0.02; this.camera.position.set(cx - 150, cy - 120, 200); this.controls.target.set(cx, cy, 0); }
     this.controls.update();
   }
+
+  frameMap() { this.view('angle'); }
 
   /** Render a screenshot at the current view. */
   screenshot(): string {
