@@ -506,9 +506,10 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
     const t = hit.t;
     const text = params.labelLanguage === 'en' && st.nameEn ? st.nameEn : st.name;
     // Follow the drawing's own text size (scaled to mm) but never above the requested size; tiny text becomes tape.
+    // Printed letters need ~4 mm to come out clean with a 0.4 mm nozzle; the drawing's size only shrinks them down to that.
     const drawn = t.size * scale * 0.9;
-    const fontSize = Math.max(3.2, Math.min(params.labelFontSize, drawn > 0 ? drawn : params.labelFontSize));
-    const tape = params.labelMode === 'tape' || (params.labelMode === 'auto' && fontSize < 4.5);
+    const fontSize = Math.max(4.0, Math.min(params.labelFontSize, drawn > 0 ? drawn : params.labelFontSize));
+    const tape = params.labelMode === 'tape' || (params.labelMode === 'auto' && fontSize < 3.6);
     const box = font.measure(text, fontSize);
     const pad = 0.6;
     const w = box.maxX - box.minX + 2 * pad, h = box.maxY - box.minY + 2 * pad;

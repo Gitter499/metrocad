@@ -29,7 +29,7 @@ export const DEFAULT_PARAMS: DesignParams = {
   labelTextHeight: 0.8,
   labelLanguage: 'local',
   labelAllowRotated: true,
-  labelMode: 'auto',
+  labelMode: 'print',
   tapeWidth: 12,
   engraveIds: true,
   snapFit: true,

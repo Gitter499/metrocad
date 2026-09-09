@@ -51,7 +51,7 @@ app.innerHTML = `
       <label class="field"><span>Labels</span><select id="labels"><option value="all">All stations</option><option value="major">Interchanges</option><option value="none">None</option></select></label>
       <label class="field"><span>Label size</span><span><input id="labelSize" type="number" value="5.5" min="3.5" max="12" step="0.5" style="width:70px"> mm</span></label>
       <label class="field"><span>Names</span><select id="lang"><option value="local">Local</option><option value="en">English</option></select></label>
-      <label class="field"><span>Label method</span><select id="labelMode"><option value="auto">Auto (tape if too small)</option><option value="print">3D-printed letters</option><option value="tape">Label-maker tape</option></select></label>
+      <label class="field"><span>Label method</span><select id="labelMode"><option value="print">3D-printed letters</option><option value="tape">Label-maker tape</option><option value="auto">Auto (tape if tiny)</option></select></label>
       <label class="field"><span>Tape width</span><span><input id="tapeWidth" type="number" value="12" min="6" max="24" step="3" style="width:70px"> mm</span></label>
       <label class="field"><span>Snap-fit lugs</span><input id="snap" type="checkbox" checked></label>
       <label class="field"><span>Transit</span><select id="modes"><option value="subway,light_rail,tram">Metro</option><option value="subway,light_rail">Metro + light rail</option><option value="tram,light_rail,subway">Tram</option></select></label>

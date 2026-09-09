@@ -101,7 +101,7 @@ export function useTape(params: DesignParams): boolean {
   if (params.labels === 'none') return false;
   if (params.labelMode === 'tape') return true;
   if (params.labelMode === 'print') return false;
-  return params.labelFontSize < 4.5;
+  return params.labelFontSize < 3.6;
 }
 
 /** Text size (em, mm) a label maker prints on a given tape width (roughly 60 % of the tape). */
