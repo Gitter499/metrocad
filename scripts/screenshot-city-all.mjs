@@ -34,7 +34,7 @@ await page.click('#dock button[data-view="front"]'); await page.waitForTimeout(9
 await page.click('#dock button[data-view="closeup"]'); await page.waitForTimeout(900); await shot('03-wall-closeup.png');
 await tab('map'); await shot('04-map.png');
 await tab('beds'); await page.waitForTimeout(1500); await shot('05-print-beds.png');
-await page.evaluate(() => document.querySelectorAll('#bedlist button')[Number(process.env.BED ?? 12)]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await page.waitForTimeout(1200); await shot('06-print-bed-focus.png');
+await page.evaluate((i) => document.querySelectorAll('#bedlist button')[i]?.dispatchEvent(new MouseEvent('click', { bubbles: true })), Number(process.env.BED ?? 12)); await page.waitForTimeout(1200); await shot('06-print-bed-focus.png');
 await tab('assemble');
 await page.waitForFunction(() => !!document.querySelector('#planhost svg'), null, { timeout: 180000 }).catch(() => console.log('assembly timeout'));
 await page.waitForTimeout(800);
