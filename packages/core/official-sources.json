@@ -23,7 +23,7 @@
   },
   "atlanta": {
     "title": "MARTA Rail Map (Wikimedia Commons)",
-    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/MARTA_Rail_Map.svg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/MARTA_rail_map_(simplified).svg",
     "kind": "svg",
     "publisher": "Wikimedia Commons",
     "license": "CC BY-SA 4.0",
@@ -35,6 +35,10 @@
     },
     "search": [
       "MARTA rail map"
+    ],
+    "urls": [
+      "https://commons.wikimedia.org/wiki/Special:FilePath/MARTA_rail_map_(simplified).svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/MARTA_Rail_Map.svg"
     ]
   },
   "moscow": {
@@ -68,7 +72,14 @@
     "kind": "svg",
     "publisher": "Wikimedia Commons",
     "license": "CC BY-SA 4.0",
-    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_Subway_Linemap_en.svg"
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_subway_map_en_jp.svg",
+    "urls": [
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_subway_map_en_jp.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_Subway.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/TokyoSubway_Metro.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/TokyoSubway.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_Subway_Linemap_en.svg"
+    ]
   },
   "vienna": {
     "title": "U-Bahn Wien Netzplan (Wikimedia Commons)",
@@ -79,7 +90,13 @@
     "kind": "svg",
     "publisher": "Wikimedia Commons",
     "license": "CC BY-SA 4.0",
-    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/U-Bahn_Wien,_Netzplan.svg"
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/U-Bahn_Wien,_Netzplan_(with_city_border).svg",
+    "urls": [
+      "https://commons.wikimedia.org/wiki/Special:FilePath/U-Bahn_Wien,_Netzplan_(with_city_border).svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/U-Map_Vienna.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/U-Bahn_Netz_Wien.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/U-Bahn_Wien,_Netzplan.svg"
+    ]
   },
   "san-francisco": {
     "title": "BART map, June 2020 (Wikimedia Commons)",
@@ -90,6 +107,13 @@
     "kind": "svg",
     "publisher": "Wikimedia Commons",
     "license": "CC BY-SA 4.0",
-    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/BART_map_June_2020.svg"
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bart-map.svg",
+    "urls": [
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Bart-map.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/BARTMapDay.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Revised_BART_map.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/BART_2019_official_map.svg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/BART_map_June_2020.svg"
+    ]
   }
 }

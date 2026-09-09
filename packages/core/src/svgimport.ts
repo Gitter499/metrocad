@@ -51,6 +51,7 @@ function parseXml(src: string): El {
   let m: RegExpExecArray | null;
   while ((m = re.exec(src))) {
     if (m[1]) { if (cur.parent) cur = cur.parent; continue; }
+    if (m[0].startsWith('<![CDATA[')) { cur.text += m[0].slice(9, -3); continue; } // <style><![CDATA[ … ]]></style>
     if (m[2]) {
       const attrs: Record<string, string> = {};
       for (const [, k, v] of (m[3] ?? '').matchAll(/([\w:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) attrs[k] = decode(v ?? '');
@@ -72,7 +73,7 @@ function styleOf(el: El, css: Map<string, Record<string, string>>): Record<strin
   for (const e of chain) {
     for (const cls of (e.attrs.class ?? '').split(/\s+/).filter(Boolean)) Object.assign(out, css.get('.' + cls) ?? {});
     if (e.attrs.id && css.has('#' + e.attrs.id)) Object.assign(out, css.get('#' + e.attrs.id));
-    for (const k of ['stroke', 'stroke-width', 'fill', 'font-size', 'text-anchor', 'display', 'visibility']) if (e.attrs[k] !== undefined) out[k] = e.attrs[k];
+    for (const k of ['stroke', 'stroke-width', 'stroke-dasharray', 'fill', 'font-size', 'text-anchor', 'display', 'visibility']) if (e.attrs[k] !== undefined) out[k] = e.attrs[k];
     if (e.attrs.style) for (const decl of e.attrs.style.split(';')) { const [k, v] = decl.split(':'); if (k && v) out[k.trim()] = v.trim(); }
   }
   return out;
@@ -178,6 +179,7 @@ export function extractSvg(src: string): SvgExtract {
   const texts: SvgExtract['texts'] = [];
   const markers: SvgExtract['markers'] = [];
   const dots: NonNullable<SvgExtract['dots']> = [];
+  const dotMax = Math.max(60, Math.max(width, height) * 0.03); // station dots are big on a tall poster
   const defs = new Set<El>();
   const byId = new Map<string, El>();
   const index = (e: El) => { if (e.attrs.id) byId.set(e.attrs.id, e); e.children.forEach(index); };
@@ -190,20 +192,27 @@ export function extractSvg(src: string): SvgExtract {
     if (st.display === 'none' || st.visibility === 'hidden') return;
     const local = mm(m, parseTransform(el.attrs.transform));
     if (!inDefs) {
-      const stroke = hexColor(st.stroke);
+      // Dashed strokes are annotations (fare-zone borders, planned extensions, rivers' banks), never a line to print.
+      const dashed = !!st['stroke-dasharray'] && st['stroke-dasharray'] !== 'none';
+      const stroke = dashed ? undefined : hexColor(st.stroke);
       const sw = Number(String(st['stroke-width'] ?? '1').replace(/[a-z%]+$/, '')) * mscale(local);
       const addPolys = (polys: Vec2[][]) => {
         // A small closed near-circular shape is a station dot (white-with-outline or filled), whatever its colour.
         for (const p of polys) {
           if (p.length < 6 || dist(p[0], p[p.length - 1]) > 1e-3) continue;
           const bb = bboxOf(p);
-          if (bb.w < 2 || bb.w > 60 || bb.h < 2 || bb.h > 60 || Math.abs(bb.w - bb.h) > 0.3 * Math.max(bb.w, bb.h)) continue;
+          if (bb.w < 2 || bb.w > dotMax || bb.h < 2 || bb.h > dotMax || Math.abs(bb.w - bb.h) > 0.3 * Math.max(bb.w, bb.h)) continue;
           dots.push({ x: bb.x + bb.w / 2, y: bb.y + bb.h / 2, r: (bb.w + bb.h) / 4 });
         }
         if (!stroke) return; const list = strokes.get(stroke) ?? []; for (const p of polys) if (p.length >= 2) list.push({ pts: p, width: sw }); strokes.set(stroke, list);
       };
       if (el.tag === 'path' && el.attrs.d) addPolys(flattenPath(el.attrs.d, local));
       else if (el.tag === 'line') addPolys([[ap(local, [Number(el.attrs.x1 ?? 0), Number(el.attrs.y1 ?? 0)]), ap(local, [Number(el.attrs.x2 ?? 0), Number(el.attrs.y2 ?? 0)])]]);
+      else if ((el.tag === 'circle' || el.tag === 'ellipse') && stroke) {
+        // A stroked circle/ellipse can be a whole ring line (Moscow's Koltsevaya and Big Circle lines).
+        const cx = Number(el.attrs.cx ?? 0), cy = Number(el.attrs.cy ?? 0), rx = Number(el.attrs.rx ?? el.attrs.r ?? 0), ry = Number(el.attrs.ry ?? el.attrs.r ?? 0);
+        if (rx > 0 && ry > 0) { const pts: Vec2[] = []; const n = 96; for (let k = 0; k <= n; k++) { const a = (2 * Math.PI * k) / n; pts.push(ap(local, [cx + rx * Math.cos(a), cy + ry * Math.sin(a)])); } addPolys([pts]); }
+      }
       else if (el.tag === 'polyline' || el.tag === 'polygon') { const nums = (el.attrs.points ?? '').split(/[\s,]+/).filter(Boolean).map(Number); const pts: Vec2[] = []; for (let k = 0; k + 1 < nums.length; k += 2) pts.push(ap(local, [nums[k], nums[k + 1]])); if (el.tag === 'polygon' && pts.length) pts.push(pts[0]); addPolys([pts]); }
       else if (el.tag === 'text') {
         const angle = -Math.atan2(local[1], local[0]) * 180 / Math.PI;
@@ -494,7 +503,10 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
   };
   // A line gets the candidate colour (within tolerance) whose strokes run past the most of its stations.
   const near = (c: string, p: Vec2, r: number) => (ex.strokes.get(c) ?? []).some((pc) => pathLength(pc.pts) > r && dist(pointAt(pc.pts, paramOf(pc.pts, p)).point, p) < r);
-  const unitR = Math.max(ex.width, ex.height) * 0.025; // labels sit a little way off their line
+  // Labels sit a little way off their line — farther when the lettering is large relative to the page.
+  const sizes = ex.texts.filter((t) => !t.partial).map((t) => t.size).sort((a, b) => a - b);
+  const medSize = sizes.length ? sizes[Math.floor(sizes.length / 2)] : 0;
+  const unitR = Math.max(Math.max(ex.width, ex.height) * 0.025, medSize * 2.5);
   for (const ln of net.lines) {
     const pts = net.stations.filter((st) => st.lines.includes(ln.id)).map(posOf).filter(Boolean) as Vec2[];
     let best: { c: string; score: number; d: number; hits: number } | undefined;
@@ -504,7 +516,9 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
       let hits = 0; for (const p of pts) if (near(c, p, unitR)) hits++;
       // Hits weigh more the closer the colour is to the line's own: a parallel line of another colour running
       // past the same labels must not win just because its strokes are nearer.
-      const score = (hits / Math.max(1, pts.length)) * Math.pow(Math.max(0, 1 - d / tol), 1.5);
+      // Station hits decide; colour closeness only tips the balance (a drawing may use pure #0000ff for a line OSM
+      // tags as light blue, but two lines that share an OSM colour are told apart by which strokes their stations sit on).
+      const score = (hits / Math.max(1, pts.length)) * (0.4 + 0.6 * Math.max(0, 1 - d / tol));
       tried.push(`${c}:${hits}/${d.toFixed(0)}`);
       if (!best || score > best.score) best = { c, score, d, hits };
     }
@@ -588,7 +602,9 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
     for (const id of lineIds) linePaths.set(id, joined);
   }
 
-  const snapTol = Math.max(30, params.lineWidth * 8);
+  // How far a label may sit from its line (mm): scaled with the lettering, which some posters set very large.
+  const medTextMm = (() => { const sz = ex.texts.filter((t) => !t.partial).map((t) => t.size * scale).sort((a, b) => a - b); return sz.length ? sz[Math.floor(sz.length / 2)] : 0; })();
+  const snapTol = Math.max(30, params.lineWidth * 8, medTextMm * 4);
   const nearestOnLines = (p: Vec2, lineIds: string[]): { pt: Vec2; lineId: string; pathIdx: number; s: number; d: number } | undefined => {
     let best: { pt: Vec2; lineId: string; pathIdx: number; s: number; d: number } | undefined;
     for (const lid of lineIds) (linePaths.get(lid) ?? []).forEach((path, pathIdx) => { const s = paramOf(path, p); const pt = pointAt(path, s).point; const d = dist(pt, p); if (!best || d < best.d) best = { pt, lineId: lid, pathIdx, s, d }; });

@@ -13,21 +13,39 @@ const src = sources[city];
 if (!src) { console.error(`no source registered for ${city}`); process.exit(2); }
 if (!src.url && !fileArg) { console.error(`${city}: no map pinned yet (candidates come from scripts/official-discover.mjs)`); process.exit(0); }
 fs.mkdirSync('tmp/official', { recursive: true });
-let file = fileArg;
-if (!file) {
-  file = `tmp/official/${city}.${src.kind}`;
-  const ua = 'MetroCAD/1.0 (https://github.com/gitter499/metrocad; metro map verification)';
+const ua = 'MetroCAD/1.0 (https://github.com/gitter499/metrocad; metro map verification)';
+const download = (url, file) => {
   for (let attempt = 0; attempt < 4; attempt++) {
-    const code = execFileSync('curl', ['-sS', '-m', '240', '-L', '-A', ua, '-o', file, '-w', '%{http_code}', src.url]).toString().trim();
-    if (code === '200') break;
-    console.error(`download ${src.url}: HTTP ${code}${attempt < 3 ? ', retrying' : ''}`);
-    if (attempt === 3) process.exit(3);
+    const code = execFileSync('curl', ['-sS', '-m', '240', '-L', '-A', ua, '-o', file, '-w', '%{http_code}', url]).toString().trim();
+    if (code === '200') return true;
+    console.error(`download ${url}: HTTP ${code}${attempt < 3 && code !== '404' ? ', retrying' : ''}`);
+    if (code === '404' || attempt === 3) return false;
     execFileSync('sleep', [code === '429' ? '620' : '20']);
   }
+  return false;
+};
+const toSvg = (file) => { if (!/\.pdf$/i.test(file)) return file; const svg = file.replace(/\.pdf$/i, '.svg'); execFileSync('python3', ['scripts/pdf2svg.py', file, svg], { stdio: 'inherit' }); return svg; };
+let svg = fileArg ? toSvg(fileArg) : undefined;
+let chosenUrl = src.url;
+if (!svg) {
+  // Several candidate drawings (the first is preferred): keep the one on which most of the city's stations land.
+  const urls = src.urls ?? [src.url];
+  let best;
+  for (let i = 0; i < urls.length; i++) {
+    const file = `tmp/official/${city}${urls.length > 1 ? '-' + i : ''}.${/\.pdf(\?|$)/i.test(urls[i]) ? 'pdf' : 'svg'}`;
+    if (!download(urls[i], file)) continue;
+    const cand = toSvg(file);
+    let matched = 0, total = 1;
+    try { const m = /matched (\d+)\/(\d+)/.exec(execFileSync('node', ['scripts/official-extract.mjs', city, cand, '--dry']).toString()); if (m) { matched = +m[1]; total = +m[2]; } } catch { /* unusable drawing */ }
+    console.error(`${city}: ${urls[i].split('/').pop()} → ${matched}/${total} stations`);
+    if (!best || matched > best.matched) best = { file: cand, url: urls[i], matched };
+    if (matched / total > 0.9) break;
+  }
+  if (!best) process.exit(3);
+  svg = best.file; chosenUrl = best.url;
 }
-let svg = file;
-if (/\.pdf$/i.test(file)) { svg = file.replace(/\.pdf$/i, '.svg'); execFileSync('python3', ['scripts/pdf2svg.py', file, svg], { stdio: 'inherit' }); }
+const file = svg;
 let raster = src.raster ? `tmp/official/${city}-official.png` : svg;
 if (src.raster) { const code = execFileSync('curl', ['-sS', '-m', '240', '-L', '-A', 'MetroCAD/1.0', '-o', raster, '-w', '%{http_code}', src.raster]).toString().trim(); if (code !== '200') raster = svg; }
-execFileSync('node', ['scripts/official-extract.mjs', city, svg, src.url, `${src.title} — ${src.publisher}. ${src.license}. Only route polylines and label anchor points are stored.`], { stdio: 'inherit' });
+execFileSync('node', ['scripts/official-extract.mjs', city, svg, chosenUrl, `${src.title} — ${src.publisher}. ${src.license}. Only route polylines and label anchor points are stored.`], { stdio: 'inherit' });
 try { execFileSync('node', ['scripts/verify-official.mjs', city, svg, raster, width], { stdio: 'inherit' }); } catch { process.exitCode = 1; }

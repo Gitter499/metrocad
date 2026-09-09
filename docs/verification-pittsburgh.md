@@ -1,39 +1,55 @@
 # Pittsburgh: our layout vs the operator's map
 
-Source drawing: `pittsburgh.svg` · 900 mm wide · 8/51 stations placed on the official geometry · 8 labels placed, 8 moved away from where the drawing has them · 18 geometry problems.
+Source drawing: `pittsburgh.svg` · 900 mm wide · 26/51 stations placed on the official geometry · 26 labels placed, 24 moved away from where the drawing has them · 34 geometry problems.
 
 ![side by side](screenshots/verify-pittsburgh.png)
 
 | Line | Stations | On map | Off-line | Jumps | Our colour | Official colour | Missing from map |
 |---|---|---|---|---|---|---|---|
-| Blue PRT Blue Line | 24 | 8 | 8 | 2 | #77b6e4 | — | South Hills Village, Washington Junction, St. Anne's, Willow, Memorial Hall, Killarney, McNeilly, South Bank … (+8) |
-| Red PRT Red Line | 31 | 8 | 0 | 2 | #ec1b24 | #ff0000 | Overbrook Junction, Castle Shannon, Arlington, Poplar, Mt. Lebanon, Dormont Junction, Potomac, Stevenson … (+15) |
-| Silver PRT Silver Line | 31 | 4 | 4 | 2 | #bcbdc0 | — | Library, West Library, Sandy Creek, Beagle, King's School, Logan, Sarah, Munroe … (+19) |
+| Blue PRT Blue Line | 24 | 18 | 1 | 0 | #77b6e4 | #0000ff | South Hills Village, Washington Junction, St. Anne's, South Hills Junction, Station Square, Allegheny |
+| Red PRT Red Line | 31 | 18 | 9 | 10 | #ec1b24 | #ff0000 | Overbrook Junction, Castle Shannon, Mt. Lebanon, Dormont Junction, Potomac, Stevenson, Palm Garden, South Hills Junction … (+5) |
+| Silver PRT Silver Line | 31 | 14 | 14 | 0 | #bcbdc0 | — | Library, West Library, Sandy Creek, Beagle, King's School, Logan, Sarah, Munroe … (+9) |
 
 ## Problems
 
-* Blue: "Dorchester" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "Bethel Village" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "Highland" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "Casswell" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "Smith Road" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "First Avenue" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "Steel Plaza" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: "Wood Street" sits Infinity mm off the Blue line (snapped to the wrong stroke?)
-* Blue: Smith Road → First Avenue is 1123 mm apart (a station out of place, or a gap in the traced line)
-* Blue: First Avenue → Smith Road is 1123 mm apart (a station out of place, or a gap in the traced line)
-* Red: First Avenue → Smith Road is 1123 mm apart (a station out of place, or a gap in the traced line)
-* Red: Smith Road → First Avenue is 1123 mm apart (a station out of place, or a gap in the traced line)
+* Blue: "Gateway" sits 17 mm off the Blue line (snapped to the wrong stroke?)
+* Red: "First Avenue" sits 21 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Steel Plaza" sits 21 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Wood Street" sits 21 mm off the Red line (snapped to the wrong stroke?)
+* Red: "North Side" sits 23 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Smith Road" sits 135 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Casswell" sits 269 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Highland" sits 318 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Bethel Village" sits 480 mm off the Red line (snapped to the wrong stroke?)
+* Red: "Dorchester" sits 485 mm off the Red line (snapped to the wrong stroke?)
+* Red: Poplar → Shiras is 282 mm apart (a station out of place, or a gap in the traced line)
+* Red: Dawn → First Avenue is 316 mm apart (a station out of place, or a gap in the traced line)
+* Red: First Avenue → Dawn is 316 mm apart (a station out of place, or a gap in the traced line)
+* Red: Shiras → Poplar is 282 mm apart (a station out of place, or a gap in the traced line)
+* Red: First Avenue → Dawn is 316 mm apart (a station out of place, or a gap in the traced line)
+* Red: Shiras → Poplar is 282 mm apart (a station out of place, or a gap in the traced line)
+* Red: Arlington → Smith Road is 277 mm apart (a station out of place, or a gap in the traced line)
+* Red: Smith Road → Arlington is 277 mm apart (a station out of place, or a gap in the traced line)
+* Red: Poplar → Shiras is 282 mm apart (a station out of place, or a gap in the traced line)
+* Red: Dawn → First Avenue is 316 mm apart (a station out of place, or a gap in the traced line)
 * Silver: "Smith Road" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "Willow" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "Memorial Hall" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "Killarney" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "McNeilly" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "South Bank" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "Denise" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "Bon Air" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "Boggs" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
 * Silver: "First Avenue" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
 * Silver: "Steel Plaza" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
 * Silver: "Wood Street" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
-* Silver: Smith Road → First Avenue is 1123 mm apart (a station out of place, or a gap in the traced line)
-* Silver: First Avenue → Smith Road is 1123 mm apart (a station out of place, or a gap in the traced line)
+* Silver: "Gateway" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
+* Silver: "North Side" sits Infinity mm off the Silver line (snapped to the wrong stroke?)
 
 ## Import log
 
-* line Blue: #00ffff (2% of 24 stations)
-* line Red: #ff0000 (9% of 31 stations)
-* line Silver: #666666 (1% of 30 stations)
-* SVG import: 8/51 stations matched, 1 line colours
+* line Blue: #0000ff (21% of 24 stations)
+* line Red: #ff0000 (17% of 31 stations)
+* line Silver: #00ffff (3% of 30 stations)
+* SVG import: 26/51 stations matched, 2 line colours

@@ -12,7 +12,8 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': mime[path.extname(p)] ?? 'application/octet-stream' });
   fs.createReadStream(p).pipe(res);
 });
-await new Promise((r) => server.listen(4175, r));
+await new Promise((r) => server.listen(0, r));
+const port = server.address().port;
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 page.setDefaultTimeout(300000);
@@ -21,7 +22,7 @@ const out = path.resolve(process.env.OUT ?? `docs/screenshots/${city.toLowerCase
 fs.mkdirSync(out, { recursive: true });
 const shot = async (name) => { try { await page.screenshot({ path: path.join(out, name), timeout: 180000, animations: 'disabled' }); console.log('shot', name); } catch (e) { console.log('shot failed', name, e.message.split('\n')[0]); } };
 const tab = async (name) => { await page.click(`#tabs button[data-tab="${name}"]`); await page.waitForTimeout(1200); };
-await page.goto('http://localhost:4175/#nostart', { waitUntil: 'load' });
+await page.goto(`http://localhost:${port}/#nostart`, { waitUntil: 'load' });
 await page.fill('#city', city);
 if (process.env.MAP_SVG) { await page.selectOption('#officialMap', 'custom'); await page.setInputFiles('#mapFile', process.env.MAP_SVG); await page.waitForTimeout(500); }
 if (process.env.BASE) await page.selectOption('#base', process.env.BASE);
