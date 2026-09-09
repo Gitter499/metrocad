@@ -2,31 +2,33 @@
   "city": "paris",
   "place": "Paris",
   "width": 600,
-  "height": 680,
+  "lineWidth": 4.8,
+  "labelFontSize": 4.5,
+  "height": 683,
   "lines": 16,
   "stations": 321,
-  "labels": 142,
-  "parts": 869,
+  "labels": 175,
+  "parts": 936,
   "byKind": {
-    "line": 159,
+    "line": 160,
     "ring": 89,
     "plug": 89,
     "dot": 232,
-    "labelPlate": 142,
-    "labelText": 142,
+    "labelPlate": 175,
+    "labelText": 175,
     "tile": 16
   },
   "plates": 37,
   "tiles": "4×4",
-  "grams": 982,
-  "costUsd": 21.61,
-  "printHours": 77.3,
+  "grams": 962,
+  "costUsd": 21.16,
+  "printHours": 75,
   "farms": {
-    "1 × A1 mini": 82.1,
-    "3 × A1 mini": 27.3,
-    "3 × A1 mini + 1 × S3": 21.8,
-    "9 × A1 mini + 2 × S3": 8.1
+    "1 × A1 mini": 79.8,
+    "3 × A1 mini": 26.6,
+    "3 × A1 mini + 1 × S3": 21.2,
+    "9 × A1 mini + 2 × S3": 7.8
   },
-  "assemblyHours": 10.1,
-  "buildSec": 83
+  "assemblyHours": 10.6,
+  "buildSec": 77
 }

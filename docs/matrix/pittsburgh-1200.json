@@ -2,31 +2,33 @@
   "city": "pittsburgh",
   "place": "Pittsburgh",
   "width": 1200,
-  "height": 1465,
+  "lineWidth": 8,
+  "labelFontSize": 7.3,
+  "height": 1680,
   "lines": 3,
   "stations": 51,
   "labels": 51,
-  "parts": 302,
+  "parts": 314,
   "byKind": {
-    "line": 61,
+    "line": 66,
     "ring": 25,
     "plug": 25,
     "dot": 26,
     "labelPlate": 51,
     "labelText": 51,
-    "tile": 63
+    "tile": 70
   },
-  "plates": 70,
-  "tiles": "7×9",
-  "grams": 3455,
-  "costUsd": 76.01,
-  "printHours": 213.1,
+  "plates": 79,
+  "tiles": "7×10",
+  "grams": 3973,
+  "costUsd": 87.41,
+  "printHours": 240.9,
   "farms": {
-    "1 × A1 mini": 222.3,
-    "3 × A1 mini": 74.1,
-    "3 × A1 mini + 1 × S3": 59.1,
-    "9 × A1 mini + 2 × S3": 22.4
+    "1 × A1 mini": 251.3,
+    "3 × A1 mini": 83.8,
+    "3 × A1 mini + 1 × S3": 66.7,
+    "9 × A1 mini + 2 × S3": 24.3
   },
-  "assemblyHours": 6.1,
-  "buildSec": 30
+  "assemblyHours": 6.6,
+  "buildSec": 34
 }

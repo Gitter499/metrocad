@@ -2,6 +2,8 @@
   "city": "paris",
   "place": "Paris",
   "width": 900,
+  "lineWidth": 6,
+  "labelFontSize": 5.5,
   "height": 975,
   "lines": 16,
   "stations": 321,
@@ -28,5 +30,5 @@
     "9 × A1 mini + 2 × S3": 14.5
   },
   "assemblyHours": 11.9,
-  "buildSec": 99
+  "buildSec": 98
 }

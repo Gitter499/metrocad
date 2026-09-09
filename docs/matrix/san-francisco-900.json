@@ -1,0 +1,34 @@
+{
+  "city": "san-francisco",
+  "place": "San Francisco",
+  "width": 900,
+  "lineWidth": 6,
+  "labelFontSize": 5.5,
+  "height": 1081,
+  "lines": 5,
+  "stations": 48,
+  "labels": 42,
+  "parts": 310,
+  "byKind": {
+    "line": 98,
+    "ring": 38,
+    "plug": 38,
+    "dot": 10,
+    "labelPlate": 42,
+    "labelText": 42,
+    "tile": 42
+  },
+  "plates": 50,
+  "tiles": "6×7",
+  "grams": 2009,
+  "costUsd": 44.2,
+  "printHours": 131.2,
+  "farms": {
+    "1 × A1 mini": 137.7,
+    "3 × A1 mini": 46.6,
+    "3 × A1 mini + 1 × S3": 37.2,
+    "9 × A1 mini + 2 × S3": 13.8
+  },
+  "assemblyHours": 6.1,
+  "buildSec": 33
+}

@@ -42,6 +42,10 @@ The same geometry built as parts, in the app (`docs/screenshots/london/`): wall 
 | ![wall](docs/screenshots/london/01-wall-angle.png) | ![close-up](docs/screenshots/london/03-wall-closeup.png) |
 | ![beds](docs/screenshots/london/05-print-beds.png) | ![assemble](docs/screenshots/london/07-assemble.png) |
 
+## Print matrix: what a map costs
+
+`docs/matrix.md` (and `.csv`) runs eight cities at 600 / 900 / 1200 mm through the whole pipeline (layout → parts → nesting → slicing → farm schedule) and reports parts, plates, filament, cost, print hours for 1 / 3 / 4 / 11 printers, and hands-on assembly time. Regenerate with `node scripts/matrix.mjs && node scripts/matrix-report.mjs`; fixtures for offline runs come from `node scripts/fetch-fixture.mjs "City" slug`.
+
 ## What you get
 
 | Output | Details |

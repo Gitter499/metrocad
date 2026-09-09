@@ -1,0 +1,34 @@
+{
+  "city": "moscow",
+  "place": "Moscow",
+  "width": 1200,
+  "lineWidth": 8,
+  "labelFontSize": 7.3,
+  "height": 1084,
+  "lines": 15,
+  "stations": 215,
+  "labels": 145,
+  "parts": 739,
+  "byKind": {
+    "line": 119,
+    "ring": 66,
+    "plug": 66,
+    "dot": 149,
+    "labelPlate": 145,
+    "labelText": 145,
+    "tile": 49
+  },
+  "plates": 71,
+  "tiles": "7×7",
+  "grams": 2767,
+  "costUsd": 60.87,
+  "printHours": 185.2,
+  "farms": {
+    "1 × A1 mini": 194.5,
+    "3 × A1 mini": 64.9,
+    "3 × A1 mini + 1 × S3": 51.5,
+    "9 × A1 mini + 2 × S3": 18.7
+  },
+  "assemblyHours": 9.8,
+  "buildSec": 74
+}

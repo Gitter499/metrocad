@@ -1,0 +1,34 @@
+{
+  "city": "tokyo",
+  "place": "Tokyo",
+  "width": 900,
+  "lineWidth": 6,
+  "labelFontSize": 5.5,
+  "height": 600,
+  "lines": 13,
+  "stations": 215,
+  "labels": 121,
+  "parts": 697,
+  "byKind": {
+    "line": 142,
+    "ring": 74,
+    "plug": 74,
+    "dot": 141,
+    "labelPlate": 121,
+    "labelText": 121,
+    "tile": 24
+  },
+  "plates": 41,
+  "tiles": "6×4",
+  "grams": 1232,
+  "costUsd": 27.11,
+  "printHours": 90.8,
+  "farms": {
+    "1 × A1 mini": 96.1,
+    "3 × A1 mini": 32.2,
+    "3 × A1 mini + 1 × S3": 25.5,
+    "9 × A1 mini + 2 × S3": 9.5
+  },
+  "assemblyHours": 9,
+  "buildSec": 58
+}

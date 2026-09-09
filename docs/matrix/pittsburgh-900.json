@@ -2,6 +2,8 @@
   "city": "pittsburgh",
   "place": "Pittsburgh",
   "width": 900,
+  "lineWidth": 6,
+  "labelFontSize": 5.5,
   "height": 1260,
   "lines": 3,
   "stations": 51,

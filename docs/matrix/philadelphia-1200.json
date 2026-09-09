@@ -2,31 +2,33 @@
   "city": "philadelphia",
   "place": "Philadelphia",
   "width": 1200,
-  "height": 588,
+  "lineWidth": 8,
+  "labelFontSize": 7.3,
+  "height": 778,
   "lines": 3,
   "stations": 63,
-  "labels": 61,
-  "parts": 235,
+  "labels": 58,
+  "parts": 237,
   "byKind": {
-    "line": 13,
+    "line": 14,
     "ring": 9,
     "plug": 9,
     "dot": 54,
-    "labelPlate": 61,
-    "labelText": 61,
-    "tile": 28
+    "labelPlate": 58,
+    "labelText": 58,
+    "tile": 35
   },
-  "plates": 35,
-  "tiles": "7×4",
-  "grams": 1385,
-  "costUsd": 30.47,
-  "printHours": 87.2,
+  "plates": 42,
+  "tiles": "7×5",
+  "grams": 1833,
+  "costUsd": 40.32,
+  "printHours": 114.2,
   "farms": {
-    "1 × A1 mini": 91.7,
-    "3 × A1 mini": 30.7,
-    "3 × A1 mini + 1 × S3": 24.5,
-    "9 × A1 mini + 2 × S3": 9.1
+    "1 × A1 mini": 119.6,
+    "3 × A1 mini": 39.8,
+    "3 × A1 mini + 1 × S3": 32.3,
+    "9 × A1 mini + 2 × S3": 12.8
   },
-  "assemblyHours": 3.1,
-  "buildSec": 22
+  "assemblyHours": 3.4,
+  "buildSec": 25
 }
