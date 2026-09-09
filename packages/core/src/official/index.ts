@@ -4,7 +4,7 @@
  * OSM (or the overlay's own table) supplies coordinates.
  */
 import type { Line, MetroNetwork, Station, TransitMode } from '../types.js';
-import { normalizeName, slug, mergeNearbyInterchanges } from '../network.js';
+import { normalizeName, slug } from '../network.js';
 
 export interface OfficialLine { ref: string; name: string; color: string; mode: TransitMode; stations: string[] }
 export interface OfficialOverlay {
@@ -74,6 +74,8 @@ export function applyOverlay(net: MetroNetwork, name: string, overlay: OfficialO
     } else if (st.name !== official && (aliasTo.get(normalizeName(st.name)) === official || normalizeName(st.name) === k)) st.name = official; // official spelling wins
     return st;
   };
+  // 2b. Official spellings for any station the aliases name (also on lines the overlay doesn't replace).
+  for (const s of net.stations) { const to = aliasTo.get(normalizeName(s.name)); if (to && normalizeName(to) !== normalizeName(s.name) && !byKey.has(normalizeName(to))) { byKey.delete(normalizeName(s.name)); s.name = to; byKey.set(normalizeName(to), s); } }
   // 3. Add the official lines.
   for (const ol of overlay.lines) {
     const ids: string[] = [];
@@ -85,7 +87,9 @@ export function applyOverlay(net: MetroNetwork, name: string, overlay: OfficialO
     for (const sid of ids) { const st = net.stations.find((s) => s.id === sid)!; if (!st.lines.includes(id)) st.lines.push(id); }
   }
   net.stations = net.stations.filter((s) => s.lines.length > 0);
-  // Interchanges the official map draws as one node (Suburban ↔ 15th Street/City Hall, Jefferson ↔ 11th Street).
+  // Interchanges the operator draws as one node in its schematic (Suburban ↔ 15th Street/City Hall, Jefferson ↔ 11th
+  // Street). Recorded as groups; the generated layout merges them, an imported official drawing keeps them apart.
+  const groups: string[][] = [];
   for (const group of overlay.interchanges ?? []) {
     const found: Station[] = [];
     for (const entry of group) {
@@ -93,31 +97,25 @@ export function applyOverlay(net: MetroNetwork, name: string, overlay: OfficialO
       const [n, ref] = entry.split('@');
       const lineIds = ref ? net.lines.filter((l) => l.ref === ref || l.members?.includes(ref)).map((l) => l.id) : undefined;
       for (const s of net.stations) {
-        if (lineIds && !s.lines.some((id) => lineIds.includes(id)) && !net.lines.some((l) => lineIds.includes(l.id) && l.sequences.some((q) => q.includes(s.id)))) continue;
+        if (lineIds && !net.lines.some((l) => lineIds.includes(l.id) && l.sequences.some((q) => q.includes(s.id)))) continue;
         if ((normalizeName(s.name) === normalizeName(n) || s.name.split(' / ').some((part) => normalizeName(part) === normalizeName(n))) && !found.includes(s)) found.push(s);
       }
     }
-    found.sort((x, y) => new Set(y.lines).size - new Set(x.lines).size); // the busiest node survives
-    const [a, ...rest] = found;
-    for (const b of rest) {
-      if (!a || b === a) continue;
-      a.lat = (a.lat + b.lat) / 2; a.lon = (a.lon + b.lon) / 2;
-      if (!a.name.includes(b.name)) a.name = `${a.name} / ${b.name}`;
-      a.osmIds.push(...b.osmIds);
-      for (const l of net.lines) l.sequences = l.sequences.map((seq) => seq.map((id) => (id === b.id ? a.id : id)).filter((id, k, arr) => k === 0 || arr[k - 1] !== id));
-      net.stations = net.stations.filter((s) => s !== b);
-    }
+    if (found.length > 1) groups.push(found.map((s) => s.id));
   }
-  // Then the generic walking-interchange pass for anything else, and rebuild station.lines.
-  mergeNearbyInterchanges(net.stations, net.lines, 220);
+  if (groups.length) net.interchanges = [...(net.interchanges ?? []), ...groups];
+  // Rebuild station.lines.
   for (const s of net.stations) s.lines = [];
   for (const l of net.lines) for (const sid of new Set(l.sequences.flat())) { const st = net.stations.find((s) => s.id === sid); if (st && !st.lines.includes(l.id)) st.lines.push(l.id); }
   net.stations = net.stations.filter((s) => s.lines.length > 0);
+  // Schematic pins spread a dense downtown for the generated layout; a pin applies to its whole interchange group.
   for (const [entry, [lat, lon]] of Object.entries(overlay.pins ?? {})) {
     const [n, ref] = entry.split('@');
     const lineIds = ref ? net.lines.filter((l) => l.ref === ref || l.members?.includes(ref)).map((l) => l.id) : undefined;
     const st = net.stations.find((s) => (!lineIds || s.lines.some((id) => lineIds.includes(id))) && (normalizeName(s.name) === normalizeName(n) || s.name.split(' / ').some((part) => normalizeName(part) === normalizeName(n))));
-    if (st) { st.lat = lat; st.lon = lon; }
+    if (!st) continue;
+    const group = groups.find((g) => g.includes(st.id)) ?? [st.id];
+    for (const id of group) { const m = net.stations.find((s) => s.id === id); if (m) { m.lat = lat; m.lon = lon; } }
   }
   if (!net.modes.includes('train') && overlay.lines.some((l) => l.mode === 'train')) net.modes.push('train');
   log?.(`Official overlay ${name}: replaced ${report.replaced.length} OSM lines with ${report.added.length} official lines, ${report.createdStations.length} stations added from the official list${report.missing.length ? `, ${report.missing.length} without coordinates: ${report.missing.join(', ')}` : ''}`);

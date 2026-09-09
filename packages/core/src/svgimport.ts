@@ -3,7 +3,7 @@
  * line paths by stroke colour, station positions by name, label positions from the text elements.
  * Tested with Wikimedia Commons metro diagrams (e.g. "London Underground full map.svg").
  */
-import type { DesignParams, LayoutLabel, LayoutLine, LayoutStation, MetroNetwork, Vec2 } from './types.js';
+import type { DesignParams, Hex, LayoutLabel, LayoutLine, LayoutStation, MetroNetwork, Vec2 } from './types.js';
 import type { LayoutResult } from './layout/index.js';
 import { roundedHull, markerRadiusMajor, dotRadius, tapeFontSize } from './layout/index.js';
 import { placeLabels, type LabelCandidateInput, type Obstacles } from './layout/labels.js';
@@ -146,9 +146,11 @@ export interface SvgExtract {
   /** Polylines grouped by stroke colour (lower-case hex), in SVG units. */
   strokes: Map<string, { pts: Vec2[]; width: number }[]>;
   /** Text labels: name, anchor point, anchor mode, rotation (deg, CCW), font size (SVG units). */
-  texts: { name: string; x: number; y: number; anchor: 'start' | 'middle' | 'end'; angle: number; size: number }[];
+  texts: { name: string; x: number; y: number; anchor: 'start' | 'middle' | 'end'; angle: number; size: number; /** one word out of a longer run: only used when nothing else matches */ partial?: boolean }[];
   /** Named markers from <use id="Station name"> / <circle id=...>. */
   markers: { name: string; x: number; y: number }[];
+  /** Unnamed station dots: small closed near-circular shapes (centre, radius, SVG units). */
+  dots?: { x: number; y: number; r: number }[];
   width: number; height: number;
 }
 
@@ -175,6 +177,7 @@ export function extractSvg(src: string): SvgExtract {
   const strokes = new Map<string, { pts: Vec2[]; width: number }[]>();
   const texts: SvgExtract['texts'] = [];
   const markers: SvgExtract['markers'] = [];
+  const dots: NonNullable<SvgExtract['dots']> = [];
   const defs = new Set<El>();
   const byId = new Map<string, El>();
   const index = (e: El) => { if (e.attrs.id) byId.set(e.attrs.id, e); e.children.forEach(index); };
@@ -189,7 +192,16 @@ export function extractSvg(src: string): SvgExtract {
     if (!inDefs) {
       const stroke = hexColor(st.stroke);
       const sw = Number(String(st['stroke-width'] ?? '1').replace(/[a-z%]+$/, '')) * mscale(local);
-      const addPolys = (polys: Vec2[][]) => { if (!stroke) return; const list = strokes.get(stroke) ?? []; for (const p of polys) if (p.length >= 2) list.push({ pts: p, width: sw }); strokes.set(stroke, list); };
+      const addPolys = (polys: Vec2[][]) => {
+        // A small closed near-circular shape is a station dot (white-with-outline or filled), whatever its colour.
+        for (const p of polys) {
+          if (p.length < 6 || dist(p[0], p[p.length - 1]) > 1e-3) continue;
+          const bb = bboxOf(p);
+          if (bb.w < 2 || bb.w > 60 || bb.h < 2 || bb.h > 60 || Math.abs(bb.w - bb.h) > 0.3 * Math.max(bb.w, bb.h)) continue;
+          dots.push({ x: bb.x + bb.w / 2, y: bb.y + bb.h / 2, r: (bb.w + bb.h) / 4 });
+        }
+        if (!stroke) return; const list = strokes.get(stroke) ?? []; for (const p of polys) if (p.length >= 2) list.push({ pts: p, width: sw }); strokes.set(stroke, list);
+      };
       if (el.tag === 'path' && el.attrs.d) addPolys(flattenPath(el.attrs.d, local));
       else if (el.tag === 'line') addPolys([[ap(local, [Number(el.attrs.x1 ?? 0), Number(el.attrs.y1 ?? 0)]), ap(local, [Number(el.attrs.x2 ?? 0), Number(el.attrs.y2 ?? 0)])]]);
       else if (el.tag === 'polyline' || el.tag === 'polygon') { const nums = (el.attrs.points ?? '').split(/[\s,]+/).filter(Boolean).map(Number); const pts: Vec2[] = []; for (let k = 0; k + 1 < nums.length; k += 2) pts.push(ap(local, [nums[k], nums[k + 1]])); if (el.tag === 'polygon' && pts.length) pts.push(pts[0]); addPolys([pts]); }
@@ -220,6 +232,16 @@ export function extractSvg(src: string): SvgExtract {
               if (!name) continue;
               const p = ap(local, [r.x, y]);
               texts.push({ name, x: p[0], y: p[1], anchor, angle: Math.round(angle * 10) / 10, size });
+            }
+            // Several station names set as one run along a straight line ("63rd 60th 56th 52nd 46th"): also offer
+            // each word on its own, at its glyph position, as a fallback when the whole run matches nothing.
+            if (xs.length >= chars.length && /\s/.test(raw.trim())) {
+              let wStart = -1;
+              for (let k = 0; k <= chars.length; k++) {
+                const blank = k === chars.length || /\s/.test(chars[k]);
+                if (!blank && wStart < 0) wStart = k;
+                if (blank && wStart >= 0) { const word = chars.slice(wStart, k).join(''); const p = ap(local, [xs[wStart], y]); texts.push({ name: word, x: p[0], y: p[1], anchor: 'start', angle: Math.round(angle * 10) / 10, size, partial: true }); wStart = -1; }
+              }
             }
           }
         } else {
@@ -256,7 +278,7 @@ export function extractSvg(src: string): SvgExtract {
     for (const c of el.children) walk(c, local, inDefs);
   };
   if (svg) walk(svg, base, false);
-  return { strokes, texts, markers, width, height };
+  return { strokes, texts, markers, dots, width, height };
 }
 
 function findFirst(el: El, tag: string): El | undefined {
@@ -275,10 +297,13 @@ function collectText(el: El): string {
 /** Expand the abbreviations transit maps use so they normalise like OSM names. */
 export function expandAbbrev(name: string): string {
   return name
+    .replace(/\s*\([^)]*\)\s*/g, ' ').replace(/,/g, ' ').replace(/\s+/g, ' ').trim() // "Terminal A (East & West)", "Ferry Ave, Camden"
+    .replace(/\bPhila\.?(?=\s|$)/gi, 'Philadelphia').replace(/\bN\.\s*(?=[A-Z])/g, 'North ').replace(/\bS\.\s*(?=[A-Z])/g, 'South ').replace(/\bE\.\s*(?=[A-Z])/g, 'East ').replace(/\bW\.\s*(?=[A-Z])/g, 'West ')
     .replace(/\bTrans\.?\s*Ctr\.?/gi, 'Transportation Center').replace(/\bT\.?\s?C\.?(?=\s|$)/g, 'Transportation Center')
     .replace(/\bSta\.?(?=\s|$)/gi, 'Station').replace(/\bSt\.(?=\s|$)/g, 'Street').replace(/\bAve\.?(?=\s|$)/gi, 'Avenue').replace(/\bRd\.?(?=\s|$)/gi, 'Road')
     .replace(/\bJct\.?(?=\s|$)/gi, 'Junction').replace(/\bCtr\.?(?=\s|$)/gi, 'Center').replace(/\bPkwy\.?(?=\s|$)/gi, 'Parkway').replace(/\bMt\.?(?=\s)/gi, 'Mount')
     .replace(/\bTerm\.?(?=\s|$)/gi, 'Terminal').replace(/\bTerms?\.?(?=\s|$)/gi, 'Terminals').replace(/\bIntl\.?(?=\s|$)/gi, 'International')
+    .replace(/\bSq\.?(?=\s|$)/gi, 'Square').replace(/\bBlvd\.?(?=\s|$)/gi, 'Boulevard').replace(/\bLn\.?(?=\s|$)/gi, 'Lane').replace(/\bHwy\.?(?=\s|$)/gi, 'Highway').replace(/\bPl\.?(?=\s|$)/gi, 'Place').replace(/\bDr\.?(?=\s|$)/gi, 'Drive')
     .replace(/\s*\/\s*/g, '-');
 }
 
@@ -314,19 +339,51 @@ export interface SvgImportOptions {
   colorTolerance?: number;
   /** Minimum stroke width (SVG units) for something to count as a line rather than a tick mark. */
   minStrokeWidth?: number;
+  /** Experimental: move stations onto the path their sequence neighbours sit on. Off by default. */
+  resnapToNeighbours?: boolean;
+  /** Draw each line in the colour the official drawing uses for it (default true); false keeps the network's colours. */
+  officialColours?: boolean;
   log?: (m: string) => void;
 }
 
 export interface SvgImportReport {
+  /** Stroke colours that carry lines (for pruning a bundled extract). */
+  usedColours?: string[];
   matchedStations: number;
   unmatchedStations: string[];
   lineColours: { ref: string; svgColour?: string; pieces: number }[];
 }
 
 /** Build a LayoutResult from an official-style SVG: geometry, station positions and label positions all come from the drawing. */
-export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: DesignParams, font: TextFont, opts: SvgImportOptions = {}): { layout: LayoutResult; report: SvgImportReport } {
+export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: DesignParams, font: TextFont, opts: SvgImportOptions = {}): { layout: LayoutResult; report: SvgImportReport; net: MetroNetwork } {
+  return layoutFromExtract(extractSvg(svgSource), net, params, font, opts);
+}
+
+/** JSON form of an extract (Map → object), for bundling an official map's geometry as a fixture. */
+export interface SvgExtractJson { strokes: Record<string, { pts: Vec2[]; width: number }[]>; texts: SvgExtract['texts']; markers: SvgExtract['markers']; dots?: SvgExtract['dots']; width: number; height: number; source?: string; attribution?: string }
+export function extractToJson(ex: SvgExtract, meta: { source?: string; attribution?: string } = {}): SvgExtractJson {
+  return { strokes: Object.fromEntries(ex.strokes), texts: ex.texts, markers: ex.markers, dots: ex.dots, width: ex.width, height: ex.height, ...meta };
+}
+export function extractFromJson(j: SvgExtractJson): SvgExtract {
+  return { strokes: new Map(Object.entries(j.strokes)), texts: j.texts, markers: j.markers, dots: j.dots, width: j.width, height: j.height };
+}
+
+/** Same as layoutFromSvg, from an already-extracted drawing (a bundled official-geometry fixture). */
+export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: DesignParams, font: TextFont, opts: SvgImportOptions = {}): { layout: LayoutResult; report: SvgImportReport; net: MetroNetwork } {
+  let net: MetroNetwork = net0;
   const log = opts.log ?? (() => {});
-  const ex = extractSvg(svgSource);
+  const ex: SvgExtract = { ...ex0, strokes: new Map([...ex0.strokes].map(([c, l]) => [c, [...l]])) };
+  // Hairlines (page borders, quadrant dividers, leader lines) are never route lines: drop strokes thinner than
+  // 30 % of the median width of the long strokes on the page, unless the caller set an explicit minimum.
+  {
+    const longW: number[] = [];
+    const pageL = Math.max(ex.width, ex.height) * 0.05;
+    for (const list of ex.strokes.values()) for (const p of list) if (pathLength(p.pts) > pageL) longW.push(p.width);
+    longW.sort((a, b) => a - b);
+    const autoMin = longW.length ? longW[Math.floor(longW.length / 2)] * 0.3 : 0;
+    const minW = opts.minStrokeWidth ?? autoMin;
+    if (minW > 0) for (const [c, list] of ex.strokes) { const kept = list.filter((p) => p.width >= minW); if (kept.length) ex.strokes.set(c, kept); else ex.strokes.delete(c); }
+  }
   // 1. Which SVG stroke colours are the lines? Prefer wide strokes with lots of length.
   const colourStats = new Map<string, { len: number; maxW: number; n: number }>();
   for (const [c, list] of ex.strokes) { let len = 0, maxW = 0; for (const p of list) { len += pathLength(p.pts); maxW = Math.max(maxW, p.width); } colourStats.set(c, { len, maxW, n: list.length }); }
@@ -334,24 +391,100 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   const tol = opts.colorTolerance ?? 230;
   // Station label positions in SVG units, per station name.
   const labelKey = (name: string) => normalizeName(expandAbbrev(name));
+  // Every text under every key it can be known by. The same name often appears several times on one map (three
+  // "Girard"s, two "Villanova"s, two "Allegheny"s on SEPTA's): candidates are resolved per station by which one lies
+  // on the strokes of that station's own line colours.
+  const assigned = new Map<string, string>();
+  const chosenText = new Map<string, SvgExtract['texts'][number] | undefined>();
+  const textAll = new Map<string, SvgExtract['texts'][number][]>();
+  const addText = (k: string, t: SvgExtract['texts'][number]) => { if (!k) return; const l = textAll.get(k) ?? []; if (!l.includes(t)) l.push(t); textAll.set(k, l); };
+  for (const t of ex.texts) { if (t.partial) continue; addText(labelKey(t.name), t); }
+  // "Norristown (Elm St)": the bracketed part is a name of its own.
+  for (const t of ex.texts) { if (t.partial) continue; const m = /\(([^)]+)\)/.exec(t.name); if (m) addText(labelKey(m[1]), t); }
+  for (const t of ex.texts) { if (!t.partial) continue; addText(labelKey(t.name), t); }
+  const keysOf = (st: { name: string; nameEn?: string }): string[] => {
+    const parts = st.name.split(/ \/ /);
+    const alts = parts.flatMap((n) => [n.replace(/^(Airport|Philadelphia)\s+/i, ''), n.replace(/^(\d+(?:st|nd|rd|th))\s+(Street|St)(\s*[&/].*)?$/i, '$1'), n.replace(/^(\d+(?:st|nd|rd|th))\s*[&/].*$/i, '$1')]);
+    return [labelKey(st.name), labelKey(st.nameEn ?? ''), ...parts.map((n) => labelKey(n)), ...alts.map((n) => labelKey(n))].filter((k, i, a) => k && a.indexOf(k) === i);
+  };
+  // Multi-line labels ("Chestnut" / "Hill West", "Norristown" / "Trans. Ctr."): stacked runs of one size on consecutive
+  // baselines are joined only when the joined words are a station's name — station lists along a straight line are
+  // stacked the same way, and those must stay separate.
+  {
+    const stationKeys = new Set<string>();
+    for (const st of net.stations) for (const k of keysOf(st)) stationKeys.add(k);
+    const full = ex.texts.filter((t) => !t.partial).sort((a, b) => a.y - b.y || a.x - b.x);
+    for (let i = 0; i < full.length; i++) {
+      const parts = [full[i]];
+      let cur = full[i];
+      for (let n = 0; n < 2; n++) {
+        const nxt = full.find((t) => t !== cur && !parts.includes(t) && Math.abs(t.size - cur.size) < cur.size * 0.15 && t.angle === cur.angle && t.y - cur.y > cur.size * 0.8 && t.y - cur.y < cur.size * 1.6 && Math.abs(t.x - cur.x) < cur.size * 0.6);
+        if (!nxt) break;
+        parts.push(nxt); cur = nxt;
+        const name = parts.map((p) => p.name).join(' ');
+        const k = labelKey(name);
+        if (stationKeys.has(k)) { const t = { ...parts[0], name }; const l = textAll.get(k) ?? []; l.unshift(t); textAll.set(k, l); }
+      }
+    }
+  }
   const textPos = new Map<string, SvgExtract['texts'][number]>();
-  for (const t of ex.texts) { const k = labelKey(t.name); if (k && !textPos.has(k)) textPos.set(k, t); }
+  for (const [k, l] of textAll) textPos.set(k, l[0]);
+  const strokeDist = (p: Vec2, colours: string[]): number => {
+    let best = Infinity;
+    for (const c of colours) for (const pc of ex.strokes.get(c) ?? []) { const s = paramOf(pc.pts, p); if (s < 0) continue; best = Math.min(best, dist(pointAt(pc.pts, s).point, p)); }
+    return best;
+  };
+  /** Among texts filed under `keys`, the one on this station's line colours (when known), else the first. */
+  const pickText = (keys: string[], colours: string[]): SvgExtract['texts'][number] | undefined => {
+    const cands: SvgExtract['texts'][number][] = [];
+    for (const k of keys) for (const t of textAll.get(k) ?? []) if (!cands.includes(t)) cands.push(t);
+    if (!cands.length) return undefined;
+    if (!colours.length || cands.length === 1) {
+      const t = cands.find((c) => !c.partial) ?? cands[0];
+      if (!colours.length) return t;
+      const sd = strokeDist([t.x, t.y], colours);
+      if (t.partial && sd > nearTextR) return undefined;
+      // a lone candidate nowhere near this station's lines may be another station of the same name (T's "City Hall"
+      // downtown vs PATCO's "City Hall Camden"): flag it so the fuzzy pass can offer something nearer
+      return sd > nearTextR * 2.5 ? { ...t, far: true } as typeof t : t;
+    }
+    let best: { t: SvgExtract['texts'][number]; d: number } | undefined;
+    for (const t of cands) { const dd = strokeDist([t.x, t.y], colours) + (t.partial ? nearTextR * 0.5 : 0); if (!best || dd < best.d) best = { t, d: dd }; }
+    return best && best.d < nearTextR * 2 ? best.t : cands.find((c) => !c.partial);
+  };
+  const nearTextR = Math.max(ex.width, ex.height) * 0.03;
   const markerPos = new Map<string, { x: number; y: number }>();
   for (const mk of ex.markers) { const k = labelKey(mk.name); if (k && !markerPos.has(k)) markerPos.set(k, mk); }
   const textKeys = [...textPos.keys()];
   /** Exact key, else the best fuzzy candidate (prefix/containment on normalised names, 4+ chars). */
-  const findText = (st: { name: string; nameEn?: string }): SvgExtract['texts'][number] | undefined => {
-    const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), ...st.name.split(/ \/ /).map((n) => labelKey(n))].filter(Boolean);
-    for (const k of keys) { const t = textPos.get(k); if (t) return t; }
+  const candidatesOf = (st: { name: string; nameEn?: string }): SvgExtract['texts'][number][] => {
+    const out: SvgExtract['texts'][number][] = [];
+    for (const k of keysOf(st)) for (const t of textAll.get(k) ?? []) if (!out.includes(t)) out.push(t);
+    return out;
+  };
+  const findText = (st: { name: string; nameEn?: string; lines?: string[] }): SvgExtract['texts'][number] | undefined => {
+    const colours = (st.lines ?? []).map((id) => assigned.get(id)).filter((c): c is string => !!c);
+    const parts = st.name.split(/ \/ /);
+    // Alternative spellings: without a leading "Airport"/city prefix, and "46th Street" as the bare ordinal "46th".
+    const alts = parts.flatMap((n) => [n.replace(/^(Airport|Philadelphia)\s+/i, ''), n.replace(/^(\d+(?:st|nd|rd|th))\s+(Street|St)(\s*[&/].*)?$/i, '$1'), n.replace(/^(\d+(?:st|nd|rd|th))\s*[&/].*$/i, '$1')]);
+    const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), ...parts.map((n) => labelKey(n)), ...alts.map((n) => labelKey(n))].filter((k, i, a) => k && a.indexOf(k) === i);
+    const exact = pickText(keys, colours) as (SvgExtract['texts'][number] & { far?: boolean }) | undefined;
+    if (exact && !exact.far) return exact;
     let best: { t: SvgExtract['texts'][number]; score: number } | undefined;
+    // "Baltimore Avenue & 42nd Street" (a tram stop named by its cross-streets) must not borrow the label of the
+    // station called plain "Baltimore Ave" on another line: cross-street names only match nearly whole.
+    const crossStreet = /&| and | at /i.test(st.name);
     for (const k of keys) for (const tk of textKeys) {
-      if (tk.length < 4) continue;
+      if (tk.length < 4 && !/^\d+(st|nd|rd|th)$/.test(tk)) continue;
       let score = 0;
-      if (k.startsWith(tk) || tk.startsWith(k)) score = Math.min(k.length, tk.length) / Math.max(k.length, tk.length) + 0.5;
+      const ratio = Math.min(k.length, tk.length) / Math.max(k.length, tk.length);
+      if (crossStreet && ratio < 0.85) continue;
+      if ((k.startsWith(tk) || tk.startsWith(k)) && ratio >= 0.45) score = ratio + 0.5;
       else if (k.includes(tk) || tk.includes(k)) score = Math.min(k.length, tk.length) / Math.max(k.length, tk.length);
-      if (score > 0.55 && (!best || score > best.score)) best = { t: textPos.get(tk)!, score };
+      if (score > 0.55 && (!best || score > best.score)) best = { t: pickText([tk], colours) ?? textPos.get(tk)!, score };
     }
-    return best?.t;
+    if (exact && best && colours.length) return strokeDist([best.t.x, best.t.y], colours) < strokeDist([exact.x, exact.y], colours) ? best.t : exact;
+    return best?.t ?? exact;
   };
   const posOf = (st: { name: string; nameEn?: string }): Vec2 | undefined => {
     const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), labelKey(st.name.split(/ \/ /)[0])];
@@ -360,20 +493,54 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
     return undefined;
   };
   // A line gets the candidate colour (within tolerance) whose strokes run past the most of its stations.
-  const assigned = new Map<string, string>();
   const near = (c: string, p: Vec2, r: number) => (ex.strokes.get(c) ?? []).some((pc) => pathLength(pc.pts) > r && dist(pointAt(pc.pts, paramOf(pc.pts, p)).point, p) < r);
-  const unitR = Math.max(ex.width, ex.height) * 0.012;
+  const unitR = Math.max(ex.width, ex.height) * 0.025; // labels sit a little way off their line
   for (const ln of net.lines) {
     const pts = net.stations.filter((st) => st.lines.includes(ln.id)).map(posOf).filter(Boolean) as Vec2[];
-    let best: { c: string; score: number; d: number } | undefined;
+    let best: { c: string; score: number; d: number; hits: number } | undefined;
+    const tried: string[] = [];
     for (const [c] of candidates) {
       const d = colorDist(ln.color, c); if (d > tol) continue;
       let hits = 0; for (const p of pts) if (near(c, p, unitR)) hits++;
-      const score = hits / Math.max(1, pts.length) - d / 2000;
-      if (!best || score > best.score) best = { c, score, d };
+      // Hits weigh more the closer the colour is to the line's own: a parallel line of another colour running
+      // past the same labels must not win just because its strokes are nearer.
+      const score = (hits / Math.max(1, pts.length)) * (1 - d / (tol * 1.5)) ;
+      tried.push(`${c}:${hits}/${d.toFixed(0)}`);
+      if (!best || score > best.score) best = { c, score, d, hits };
     }
-    if (best && (best.score > 0.15 || pts.length === 0)) assigned.set(ln.id, best.c);
+    if (typeof process !== 'undefined' && process.env?.SVG_DEBUG === 'colours') log(`  ${ln.ref} candidates ${tried.join(' ')}`);
+    // Enough of the line's stations sit on strokes of this colour: a share of them, or at least three (long lines
+    // whose labels are mostly bare ordinals or logos still have a few clean hits).
+    if (best && (best.score > 0.15 || best.hits >= 3 || pts.length === 0)) assigned.set(ln.id, best.c);
     log(`line ${ln.ref}: ${best ? `${best.c} (${(best.score * 100).toFixed(0)}% of ${pts.length} stations)` : 'no colour match'}`);
+  }
+  // 2b. Resolve which text is which station. A name that appears more than once ("Allegheny" on three lines) goes to
+  //     the candidate nearest the station's neighbours along its own lines; a bare word out of a longer run counts
+  //     only when it sits right on the station's line and next to its neighbours.
+  {
+    const coherenceR = Math.max(ex.width, ex.height) * 0.2;
+    const nb = new Map<string, Set<string>>();
+    for (const ln of net.lines) for (const seq of ln.sequences) for (let i = 0; i < seq.length; i++) { const set = nb.get(seq[i]) ?? nb.set(seq[i], new Set()).get(seq[i])!; if (i > 0) set.add(seq[i - 1]); if (i + 1 < seq.length) set.add(seq[i + 1]); }
+    for (const st of net.stations) chosenText.set(st.id, findText(st));
+    for (let iter = 0; iter < 3; iter++) {
+      for (const st of net.stations) {
+        const cands = candidatesOf(st);
+        const colours = st.lines.map((id) => assigned.get(id)).filter((c): c is string => !!c);
+        const current = chosenText.get(st.id);
+        if (cands.length < 2 && !(current?.partial)) continue;
+        const nbPos: Vec2[] = [];
+        for (const n of nb.get(st.id) ?? []) { const t = chosenText.get(n); if (t) nbPos.push([t.x, t.y]); }
+        let best: { t: SvgExtract['texts'][number]; cost: number } | undefined;
+        for (const t of cands.length ? cands : current ? [current] : []) {
+          const sd = colours.length ? strokeDist([t.x, t.y], colours) : 0;
+          const nd = nbPos.length ? Math.min(...nbPos.map((p) => dist(p, [t.x, t.y]))) : 0;
+          if (t.partial && (sd > nearTextR * 0.6 || (nbPos.length && nd > coherenceR))) continue;
+          const cost = nd + 0.5 * sd + (t.partial ? nearTextR : 0);
+          if (!best || cost < best.cost) best = { t, cost };
+        }
+        chosenText.set(st.id, best?.t);
+      }
+    }
   }
 
   // 2. Scale SVG → mm: fit the union of assigned strokes into the requested width (and height if given).
@@ -389,9 +556,9 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   const toMm = (p: Vec2): Vec2 => [(p[0] - bb.x) * scale + ox, H - ((p[1] - bb.y) * scale + oy)]; // y up
 
   // Name → drawing position (label text or explicit marker), in mm.
-  const drawingPos = (st: { name: string; nameEn?: string }): { x: number; y: number; source: 'marker' | 'text'; t?: SvgExtract['texts'][number] } | undefined => {
+  const drawingPos = (st: { id?: string; name: string; nameEn?: string }): { x: number; y: number; source: 'marker' | 'text'; t?: SvgExtract['texts'][number] } | undefined => {
     const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), labelKey(st.name.split(/ \/ /)[0])];
-    const t = findText(st);
+    const t = st.id && chosenText.has(st.id) ? chosenText.get(st.id) : findText(st);
     for (const k of keys) { const mk = markerPos.get(k); if (mk) return { x: mk.x, y: mk.y, source: 'marker', t }; }
     if (t) return { x: t.x, y: t.y, source: 'text', t };
     return undefined;
@@ -403,37 +570,75 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   const linePaths = new Map<string, Vec2[][]>();
   const ticks = new Map<string, Vec2[][]>(); // colour -> short segments (mm)
   const nearTol = params.lineWidth * 10;
-  for (const ln of net.lines) {
-    const c = assigned.get(ln.id); if (!c) continue;
+  // One stroke set per colour: all lines drawn in that colour (SEPTA's thirteen Regional Rail lines) share it.
+  const byColour = new Map<string, string[]>();
+  for (const ln of net.lines) { const c = assigned.get(ln.id); if (c) (byColour.get(c) ?? byColour.set(c, []).get(c)!).push(ln.id); }
+  for (const [c, lineIds] of byColour) {
     const all = (ex.strokes.get(c) ?? []).filter((p) => p.width >= minW);
     const short = all.filter((p) => pathLength(p.pts) * scale <= params.lineWidth * 2.2).map((p) => p.pts.map(toMm));
-    ticks.set(c, [...(ticks.get(c) ?? []), ...short]);
+    ticks.set(c, short);
     const pieces = all.filter((p) => pathLength(p.pts) * scale > params.lineWidth * 2.2).map((p) => p.pts.map(toMm));
-    const anchors = net.stations.filter((st) => st.lines.includes(ln.id)).map((st) => drawingPos(st)).filter(Boolean).map((h) => toMm([h!.x, h!.y]));
+    const anchors = net.stations.filter((st) => st.lines.some((id) => lineIds.includes(id))).map((st) => drawingPos(st)).filter(Boolean).map((h) => toMm([h!.x, h!.y]));
     const keep = new Set<number>();
     pieces.forEach((pc, i) => { for (const a of anchors) { if (paramOf(pc, a) >= 0 && dist(pointAt(pc, paramOf(pc, a)).point, a) < nearTol) { keep.add(i); break; } } });
     // grow through touching pieces (junction pieces without their own stations)
     let grown = true;
     while (grown) { grown = false; pieces.forEach((pc, i) => { if (keep.has(i)) return; for (const j of keep) { const q = pieces[j]; if ([pc[0], pc[pc.length - 1]].some((e) => dist(e, q[0]) < params.lineWidth || dist(e, q[q.length - 1]) < params.lineWidth)) { keep.add(i); grown = true; break; } } }); }
     const joined = joinPolylines(pieces.filter((_, i) => keep.has(i)), params.lineWidth * 0.6).map((p) => simplifyCollinear(dedupe(p, 0.05), 0.01)).filter((p) => pathLength(p) > params.lineWidth * 2);
-    linePaths.set(ln.id, joined);
+    for (const id of lineIds) linePaths.set(id, joined);
   }
 
-  // 4. Station positions. Interchanges usually have a named marker; regular stations a tick mark next to
-  //    the label. Use the tick end that touches the line, else the label anchor snapped to the line.
-  const unmatched: string[] = [];
   const snapTol = Math.max(30, params.lineWidth * 8);
   const nearestOnLines = (p: Vec2, lineIds: string[]): { pt: Vec2; lineId: string; pathIdx: number; s: number; d: number } | undefined => {
     let best: { pt: Vec2; lineId: string; pathIdx: number; s: number; d: number } | undefined;
     for (const lid of lineIds) (linePaths.get(lid) ?? []).forEach((path, pathIdx) => { const s = paramOf(path, p); const pt = pointAt(path, s).point; const d = dist(pt, p); if (!best || d < best.d) best = { pt, lineId: lid, pathIdx, s, d }; });
     return best;
   };
+  // 3b. A station our data holds once but the drawing shows twice — "Radnor" on the Norristown line and "Radnor" on
+  //     the Paoli line, half a kilometre apart with no connection — is split into one station per drawn colour when
+  //     the colours' nearest strokes are far apart. (A true interchange has both colours at one spot.)
+  {
+    const splitStations: MetroNetwork['stations'] = [];
+    const replace = new Map<string, Map<string, string>>(); // original id -> (colour -> new id)
+    for (const st of net.stations) {
+      const colours = [...new Set(st.lines.map((id) => assigned.get(id)).filter((c): c is string => !!c))];
+      if (colours.length < 2) { splitStations.push(st); continue; }
+      const per = colours.map((c) => {
+        const linesC = st.lines.filter((id) => assigned.get(id) === c);
+        const t = pickText(keysOf(st), [c]) ?? chosenText.get(st.id);
+        const p = t ? toMm([t.x, t.y]) : undefined;
+        const near = p ? nearestOnLines(p, linesC) : undefined;
+        return { c, linesC, t, pt: near && near.d < snapTol ? near.pt : undefined };
+      }).filter((x) => x.pt);
+      let spread = 0;
+      for (const a of per) for (const b of per) if (a.pt && b.pt) spread = Math.max(spread, dist(a.pt, b.pt));
+      if (per.length < 2 || spread < params.lineWidth * 8) { splitStations.push(st); continue; }
+      const map = new Map<string, string>();
+      per.forEach((x, i) => {
+        const id = i === 0 ? st.id : `${st.id}~${i + 1}`;
+        map.set(x.c, id);
+        splitStations.push({ ...st, id, lines: x.linesC });
+        if (x.t) chosenText.set(id, x.t);
+      });
+      replace.set(st.id, map);
+      log(`SVG import: "${st.name}" is drawn as ${per.length} separate stations (${spread.toFixed(0)} mm apart); split`);
+    }
+    if (replace.size) {
+      net = { ...net, stations: splitStations, lines: net.lines.map((l) => ({ ...l, sequences: l.sequences.map((seq) => seq.map((id) => replace.get(id)?.get(assigned.get(l.id) ?? '') ?? id)) })) };
+    }
+  }
+
+  // 4. Station positions. Interchanges usually have a named marker; regular stations a tick mark next to
+  //    the label. Use the tick end that touches the line, else the label anchor snapped to the line.
+  const unmatched: string[] = [];
   const stationAnchor = new Map<string, Vec2>();
   // Text-anchored stations claim tick marks: every tick belongs to at most one station, nearest pairs first, so a
   // two-line label (e.g. "Chalfont &\nLatimer") can't steal the neighbouring station's tick and land on top of it.
+  const dotsMm: Vec2[] = (ex.dots ?? []).map((d) => toMm([d.x, d.y]));
+  const dotTol = Math.max(48, W * 0.15);
   const textTarget = new Map<string, Vec2>();
   // A tick belongs next to its label: look only a few line-widths around the text anchor.
-  const tickTol = Math.max(12, params.lineWidth * 3);
+  const tickTol = Math.max(48, params.lineWidth * 8);
   const claims: { id: string; key: string; d: number; pt: Vec2 }[] = [];
   const hits = new Map<string, ReturnType<typeof drawingPos>>();
   for (const st of net.stations) {
@@ -450,6 +655,14 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
       const nl0 = nearestOnLines(tk[0], st.lines), nl1 = nearestOnLines(tk[tk.length - 1], st.lines);
       claims.push({ id: st.id, key: `${mid[0].toFixed(2)},${mid[1].toFixed(2)}`, d, pt: (nl0?.d ?? 1e9) < (nl1?.d ?? 1e9) ? tk[0] : tk[tk.length - 1] });
     }
+    // Station dots drawn on one of this station's lines: the strongest signal an official map gives.
+    for (const dot of dotsMm) {
+      const d = dist(dot, p);
+      if (d >= dotTol) continue;
+      const nl = nearestOnLines(dot, st.lines);
+      if (!nl || nl.d > params.lineWidth * 1.5) continue;
+      claims.push({ id: st.id, key: `dot:${dot[0].toFixed(2)},${dot[1].toFixed(2)}`, d, pt: nl.pt });
+    }
   }
   claims.sort((a, b) => a.d - b.d);
   const tickOwner = new Map<string, string>();
@@ -461,14 +674,36 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
     for (const c of claims) if (!tickOwner.has(c.key) && dist(c.key.split(',').map(Number) as Vec2, mp) < params.lineWidth * 1.5) tickOwner.set(c.key, st.id);
   }
   for (const c of claims) { if (claimed.has(c.id) || tickOwner.has(c.key)) continue; tickOwner.set(c.key, c.id); claimed.set(c.id, c.pt); }
+  const anchorPath = new Map<string, { lineId: string; pathIdx: number }>();
   for (const st of net.stations) {
     const p = textTarget.get(st.id); if (!p) continue;
     const target = claimed.get(st.id) ?? p;
     const near = nearestOnLines(target, st.lines);
     if (!near || near.d > snapTol) { unmatched.push(st.name); continue; }
     stationAnchor.set(st.id, near.pt);
+    anchorPath.set(st.id, { lineId: near.lineId, pathIdx: near.pathIdx });
     const dbgId = typeof process !== 'undefined' ? process.env?.SVG_DEBUG : undefined;
     if (dbgId && st.id.includes(dbgId)) log(`[svg ${st.id}] source=${hits.get(st.id)?.source} text=${hits.get(st.id)?.t?.name ?? '—'} p=${p.map((v) => v.toFixed(1))} tick=${claimed.get(st.id)?.map((v) => v.toFixed(1)) ?? 'none'} claims=${claims.filter((c) => c.id === st.id).map((c) => `${c.key}:${c.d.toFixed(0)}${tickOwner.get(c.key) === st.id ? '*' : tickOwner.has(c.key) ? '(' + tickOwner.get(c.key) + ')' : ''}`).slice(0, 5).join(' ')} anchor=${near.pt.map((v) => v.toFixed(1))} d=${near.d.toFixed(1)}`);
+  }
+  // Second pass: a label far from its tick can land on the nearest stroke of *another* branch (Wilmington-line
+  // labels next to the Media line's end). Where both neighbours in the sequence sit on one path and this station
+  // could sit on that path too (within tolerance), move it there.
+  {
+    const nbOf = new Map<string, Set<string>>();
+    for (const ln of net.lines) for (const seq of ln.sequences) for (let i = 0; i < seq.length; i++) { const set = nbOf.get(seq[i]) ?? nbOf.set(seq[i], new Set()).get(seq[i])!; if (i > 0) set.add(seq[i - 1]); if (i + 1 < seq.length) set.add(seq[i + 1]); }
+    const pathKey = (a?: { lineId: string; pathIdx: number }) => (a ? `${a.lineId}#${a.pathIdx}` : '');
+    for (let pass = 0; pass < (opts.resnapToNeighbours ? 2 : 0); pass++) for (const st of net.stations) {
+      const mine = anchorPath.get(st.id); if (!mine || claimed.has(st.id)) continue;
+      const votes = new Map<string, number>();
+      for (const n of nbOf.get(st.id) ?? []) { const k = pathKey(anchorPath.get(n)); if (k) votes.set(k, (votes.get(k) ?? 0) + 1); }
+      let bestKey = '', bestVotes = 0; for (const [k, v] of votes) if (v > bestVotes) { bestKey = k; bestVotes = v; }
+      if (!bestKey || bestKey === pathKey(mine) || bestVotes < 1) continue;
+      const [lineId, idx] = bestKey.split('#');
+      const path = (linePaths.get(lineId) ?? [])[Number(idx)]; if (!path) continue;
+      const p = textTarget.get(st.id)!;
+      const sParam = paramOf(path, p); const pt = pointAt(path, sParam).point; const d = dist(pt, p);
+      if (d <= snapTol * 1.5) { stationAnchor.set(st.id, pt); anchorPath.set(st.id, { lineId, pathIdx: Number(idx) }); }
+    }
   }
   // Two stations on one spot means a mis-snap; say so (the verification report picks this up).
   {
@@ -478,8 +713,10 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   log(`SVG import: ${stationAnchor.size}/${net.stations.length} stations matched, ${new Set(assigned.values()).size} line colours`);
 
   // 5. Chains: split each line path at the major stations on it, keep regular stations as through-holes.
+  // Interchange = more than one drawn colour (thirteen same-coloured Regional Rail lines through Elkins Park are one
+  // plain stop, as on the map), or a branch point / terminus.
   const major = new Map<string, boolean>();
-  for (const st of net.stations) major.set(st.id, st.lines.length > 1);
+  for (const st of net.stations) major.set(st.id, new Set(st.lines.map((id) => assigned.get(id) ?? id)).size > 1);
   const degree = new Map<string, Set<string>>();
   for (const ln of net.lines) for (const seq of ln.sequences) for (let i = 0; i + 1 < seq.length; i++) { (degree.get(seq[i]) ?? degree.set(seq[i], new Set()).get(seq[i])!).add(seq[i + 1]); (degree.get(seq[i + 1]) ?? degree.set(seq[i + 1], new Set()).get(seq[i + 1])!).add(seq[i]); }
   for (const st of net.stations) if ((degree.get(st.id)?.size ?? 2) !== 2) major.set(st.id, true);
@@ -490,10 +727,17 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   }
   const bedW = params.bed.x - 2 * params.bedMargin, bedH = params.bed.y - 2 * params.bedMargin;
   const lines: LayoutLine[] = [];
+  // Lines drawn in one colour share one set of strokes (SEPTA's Regional Rail): the first line of each colour carries
+  // the chains for the whole colour, its sister lines get none, and every station of any of them is a through-hole.
+  const carrierOf = new Map<string, string>();
+  for (const ln of net.lines) { const c = assigned.get(ln.id); if (c && !carrierOf.has(c)) carrierOf.set(c, ln.id); }
   for (const ln of net.lines) {
     const chains: LayoutLine['chains'] = [];
-    const paths = linePaths.get(ln.id) ?? [];
-    const onLine = net.stations.filter((s) => s.lines.includes(ln.id) && stMap.has(s.id));
+    const colour = assigned.get(ln.id);
+    const carrier = colour ? carrierOf.get(colour) === ln.id : true;
+    const groupIds = new Set(net.lines.filter((l) => (colour ? assigned.get(l.id) === colour : l.id === ln.id)).map((l) => l.id));
+    const paths = carrier ? linePaths.get(ln.id) ?? [] : [];
+    const onLine = net.stations.filter((s) => s.lines.some((id) => groupIds.has(id)) && stMap.has(s.id));
     paths.forEach((path, pi) => {
       // stations on this path (nearest path of the line)
       const here = onLine.map((s) => { const st = stMap.get(s.id)!; const sParam = paramOf(path, [st.x, st.y]); const pt = pointAt(path, sParam).point; return { st, s: sParam, d: dist(pt, [st.x, st.y]) }; }).filter((h) => h.d < params.lineWidth * 1.2).sort((a, b) => a.s - b.s);
@@ -516,7 +760,7 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
         });
       }
     });
-    lines.push({ id: ln.id, ref: ln.ref, name: ln.name, color: ln.color, chains });
+    lines.push({ id: ln.id, ref: ln.ref, name: ln.name, color: ((opts.officialColours ?? true) && assigned.get(ln.id)) ? (assigned.get(ln.id) as Hex) : ln.color, chains });
   }
   for (const st of stMap.values()) { if (!st.markerPoints.length) st.markerPoints = [[st.x, st.y]]; if (st.major) { st.x = st.markerPoints.reduce((a, p) => a + p[0], 0) / st.markerPoints.length; st.y = st.markerPoints.reduce((a, p) => a + p[1], 0) / st.markerPoints.length; } }
 
@@ -572,10 +816,10 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
     return { ...l, n: i + 1, tape: true, textOrigin: [2 - tm.minX, (params.tapeWidth - (tm.maxY - tm.minY)) / 2 - tm.minY] };
   });
   const layoutStations = [...stMap.values()];
-  const report: SvgImportReport = { matchedStations: stMap.size, unmatchedStations: unmatched, lineColours: net.lines.map((l) => ({ ref: l.ref, svgColour: assigned.get(l.id), pieces: (linePaths.get(l.id) ?? []).length })) };
+  const report: SvgImportReport = { usedColours: [...new Set(assigned.values())], matchedStations: stMap.size, unmatchedStations: unmatched, lineColours: net.lines.map((l) => ({ ref: l.ref, svgColour: assigned.get(l.id), pieces: (linePaths.get(l.id) ?? []).length })) };
   const graph: any = { nodes: new Map(), corridors: [], incident: new Map() };
   void roundedHull; void sub; void mul; void dot; void norm;
-  return { layout: { width: W, height: H, stations: layoutStations, lines, labels, unlabeled: net.stations.filter((s) => !labels.some((l) => l.stationId === s.id)).map((s) => s.id), scale, graph, corridors: [] }, report };
+  return { layout: { width: W, height: H, stations: layoutStations, lines, labels, unlabeled: net.stations.filter((s) => !labels.some((l) => l.stationId === s.id)).map((s) => s.id), scale, graph, corridors: [] }, report, net };
 }
 
 function subPath(path: Vec2[], s0: number, s1: number): Vec2[] {

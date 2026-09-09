@@ -1,7 +1,7 @@
-name: Verify networks against Wikidata
+name: Verify networks against Wikidata and official maps
 on:
   push:
-    paths: ['packages/core/fixtures/**', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'scripts/verify-web.mjs', '.github/workflows/verify.yml']
+    paths: ['packages/core/fixtures/**', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'packages/core/src/svgimport.ts', 'packages/core/src/official/**', 'scripts/verify-web.mjs', 'scripts/verify-official.mjs', '.github/workflows/verify.yml']
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
@@ -18,15 +18,32 @@ jobs:
       - run: npm run build -w @metrocad/core
       - run: node scripts/verify.mjs paris && node scripts/verify.mjs london
       - run: node scripts/verify-web.mjs || echo "::warning::some lines differ from Wikipedia/Wikidata — see docs/verification.md"
+      # Official-map comparison: fetch the operator's current diagram, extract its geometry, place our stations on it,
+      # and report every station that is missing, off its line, or out of place, with a side-by-side image.
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install pymupdf pillow
+      - name: Philadelphia vs SEPTA's Regional Rail & Rail Transit map
+        run: |
+          mkdir -p tmp/septa
+          curl -sSL -A "metrocad-verify" -o tmp/septa/septa.pdf "https://wwww.septa.org/wp-content/uploads/page/communication/Regional-Rail-Rail-Transit-Line-Map_JUNE26.pdf"
+          curl -sSL -A "metrocad-verify" -o tmp/septa/septa.png "https://wwww.septa.org/wp-content/uploads/page/communication/Regional-Rail-Rail-Transit-Line-Map_JUNE26.png"
+          python scripts/pdf2svg.py tmp/septa/septa.pdf tmp/septa/septa.svg
+          node scripts/verify-official.mjs philadelphia tmp/septa/septa.svg tmp/septa/septa.png 900 || echo "::warning::Philadelphia differs from SEPTA's map — see docs/verification-philadelphia.md"
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: verification-report, path: docs/verification.md }
+        with:
+          name: verification-report
+          path: |
+            docs/verification.md
+            docs/verification-philadelphia.md
+            docs/screenshots/verify-philadelphia.png
       - name: Commit report
         if: github.event_name != 'pull_request'
         run: |
           git config user.name "metrocad-verify[bot]"
           git config user.email "verify@metrocad.local"
-          git add docs/verification.md
+          git add docs/verification.md docs/verification-philadelphia.md docs/screenshots/verify-philadelphia.png
           git diff --cached --quiet && exit 0
           git commit -m "docs: refresh Wikidata verification report"
           git pull --rebase --autostash origin "${GITHUB_REF_NAME}"

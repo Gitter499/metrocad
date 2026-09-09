@@ -44,6 +44,8 @@ export interface MetroNetwork {
   lines: Line[];
   stations: Station[];
   modes: TransitMode[];
+  /** Station-id groups an operator draws as one interchange (generated layouts merge them; official drawings keep them apart). */
+  interchanges?: string[][];
   source: { provider: 'osm'; overpassEndpoint?: string; fetchedAt: string; attribution: string };
 }
 
@@ -166,6 +168,8 @@ export interface DesignParams {
   /** Radial clearance between mating parts. */
   clearance: number;
 
+  /** Generated layouts: draw every tram stop, or (default) only termini, branch points and interchanges like operators' maps. */
+  tramStops?: 'all' | 'major';
   base: BaseStyle;
   baseThickness: number;
   /** Outline base: how far the base extends beyond lines, stations and labels (mm). */

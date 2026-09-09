@@ -30,7 +30,7 @@ Algorithms can only produce a map *in the style of* a transit diagram. To get th
 * **Generated layout**: the algorithmic fallback for cities without a drawing. *Auto* picks strict octilinear for networks with up to 8 distinct line colours (the way SEPTA, PRT and most US operators draw theirs, horizontals/verticals preferred, diagonals only for genuinely diagonal runs) and semi-geographic for bigger ones (Paris-style). Services that share a colour (SEPTA's Regional Rail lines, B1/B2/B3, T1–T5) share one ribbon, count once at interchanges, and merge into one line (B, T, D) as on the operator's map.
 * **Official station lists** (`packages/core/src/official/`): where OpenStreetMap's route relations are incomplete, the operator's own map is the source of truth. SEPTA Regional Rail's 13 lines are bundled with their official station order, OSM coordinates, the interchanges SEPTA draws as one node (Suburban / 15th Street / City Hall, Jefferson / 11th Street) and "schematic" positions that stretch Center City the way the printed map does. Overlays apply automatically whenever the fetched network matches (`applyOfficialOverlays`).
 
-Philadelphia (the default city: SEPTA Metro L/B/M/T/D/G, all 13 Regional Rail lines and PATCO) and Pittsburgh, checked against the operators' own files: SEPTA's 2025 *Metro & Frequent Bus* network map PDF contains only a raster image (no vector paths or text), and its vector PDFs are single-line strip maps; PRT's T map PDF has vector paths but all text converted to outlines, so station names cannot be read. Neither can be imported as geometry yet (a raster/outlined map would need OCR and line tracing). The bundled renders for those two therefore come from the octilinear generator. Any vector map with real text — e.g. an SVG exported by the operator's designers — imports directly; PDFs convert with `python -c "import pymupdf; ..."` (see `scripts/pdf2svg.py`) or Inkscape.
+**Philadelphia** (the default city) is built on SEPTA's own *Regional Rail & Rail Transit* diagram (June 2026, vector PDF with real text on septa.org): its line polylines and label anchors are extracted once (`scripts/official-extract.mjs`) into `packages/core/fixtures/philadelphia.official.json` and bundled, so the app and CLI reproduce SEPTA's geometry and colours offline — L, B with the Broad-Ridge spur, M, the T tunnel, D 101/102 with every stop, G, all thirteen Regional Rail lines and PATCO. `--no-official` falls back to the generated layout. SEPTA's separate *Metro* poster and PRT's T map are raster/outlined-text PDFs and cannot be imported; Pittsburgh remains generated.
 
 | Source drawing (Commons) | MetroCAD import (all 267 stations, 11 lines matched) |
 |---|---|
@@ -42,6 +42,14 @@ The same geometry built as parts, in the app (`docs/screenshots/london/`): wall 
 |---|---|
 | ![wall](docs/screenshots/london/01-wall-angle.png) | ![close-up](docs/screenshots/london/03-wall-closeup.png) |
 | ![beds](docs/screenshots/london/05-print-beds.png) | ![assemble](docs/screenshots/london/07-assemble.png) |
+
+## Verification against the operator's map
+
+Facts alone (station counts, termini, colour codes) let a wrong-looking map pass, so there is a second check that compares *appearance*. `scripts/verify-official.mjs city official.svg official.png` places our stations on the operator's drawing and reports every station missing from the map, every station sitting off its line, every label moved away from where the drawing has it, every implausible jump between neighbours, and our colour next to the official one per line — plus a side-by-side image, official raster left and our render right:
+
+![Philadelphia vs SEPTA](docs/screenshots/verify-philadelphia.png)
+
+The GitHub Action (`verify.yml`) downloads SEPTA's current PDF, converts it, runs the comparison and commits `docs/verification-philadelphia.md`; it fails when more than ten stations are wrong or fewer than half are placed. The importer itself learned from this map: hairline page decorations are ignored, duplicate names (three "Allegheny"s) resolve by which one lies on the station's own line colour and next to its neighbours, station dots in the drawing anchor stations whose labels sit far from the line, stacked two-line labels are joined only when they spell a station's name, and a station our data holds once but the drawing shows twice (Radnor on the Paoli line and on the Norristown line) is split.
 
 ## Print matrix: what a map costs
 

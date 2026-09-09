@@ -45,6 +45,6 @@ export const SEPTA_REGIONAL_RAIL: OfficialOverlay = {
     'Jefferson Station': 'Jefferson', 'Suburban Station': 'Suburban', '30th Street Station': '30th Street', 'University City': 'Penn Medicine',
     'Fern Rock': 'Fern Rock Transportation Center', 'Norristown TC': 'Norristown Transportation Center', 'Chester TC': 'Chester Transportation Center',
     'Elwyn': 'Elwyn', 'Delaware Valley College': 'Delaware Valley University', 'Airport Terminals C&D': 'Airport Terminals C & D', 'Airport Terminals E&F': 'Airport Terminals E & F',
-    'Airport Terminal C-D': 'Airport Terminals C & D', 'Saint Davids': 'St. Davids', 'St Davids': 'St. Davids', 'Saint Martins': 'St. Martins', "St. Martin's": 'St. Martins', 'St Martins': 'St. Martins', 'Airport Terminal E-F': 'Airport Terminals E & F', 'Newark, DE': 'Newark', 'Newark (Delaware)': 'Newark',
+    'Airport Terminal C-D': 'Airport Terminals C & D', 'Saint Davids': 'St. Davids', 'St Davids': 'St. Davids', 'Saint Martins': 'St. Martins', "St. Martin's": 'St. Martins', 'St Martins': 'St. Martins', 'Airport Terminal E-F': 'Airport Terminals E & F', 'Newark, DE': 'Newark', 'Newark (Delaware)': 'Newark', 'Broadway': 'Walter Rand Transportation Center',
   },
 };

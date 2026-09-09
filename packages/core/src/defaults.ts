@@ -8,6 +8,7 @@ export const DEFAULT_PARAMS: DesignParams = {
   bedMargin: 4,
   clearance: 0.15,
 
+  tramStops: 'major',
   base: 'tiles',
   baseThickness: 4,
   baseMargin: 8,

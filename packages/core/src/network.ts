@@ -166,7 +166,7 @@ export function buildNetwork(input: BuildNetworkInput & { tramStops?: 'all' | 'm
 
   // 4b. Walking interchanges: stations of *different* lines within ~130 m under different names
   //     (SEPTA "City Hall" / "15th Street", PATCO "8th & Market" / "8th Street") become one station.
-  mergeNearbyInterchanges(stations, lines, 220);
+  // (Walking interchanges are merged by the generated layout, not here: an official drawing shows them as they are.)
 
   // 5. Station.lines, dedupe, deterministic ordering.
   for (const st of stations) st.lines = [];
@@ -344,7 +344,7 @@ function localPath(a: string, b: string, adj: Map<string, Set<string>>, pos: Map
   return undefined;
 }
 
-function thinTramStops(lines: Line[], stations: Station[]): void {
+export function thinTramStops(lines: Line[], stations: Station[]): void {
   const byId = new Map(stations.map((s) => [s.id, s] as const));
   const tramIds = new Set(lines.filter((l) => l.mode === 'tram').map((l) => l.id));
   if (!tramIds.size) return;

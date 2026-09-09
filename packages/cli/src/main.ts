@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import Module from 'manifold-3d';
-import { fetchCityNetwork, buildFromNetwork, buildBundle, TextFont, parseFarm, sliceAndSchedule, type MetroNetwork, type TransitMode, type PartialParams } from '@metrocad/core';
+import { fetchCityNetwork, buildFromNetwork, buildBundle, TextFont, parseFarm, sliceAndSchedule, slugify, type MetroNetwork, type TransitMode, type PartialParams } from '@metrocad/core';
 
 const require = createRequire(import.meta.url);
 
@@ -33,6 +33,7 @@ usage: metrocad <city> [options]
   --clearance <mm>     fit clearance (default 0.15)
   --label-mode print|tape|auto   raised printed letters (default), pockets for label-maker tape, or auto (tape when < 3.6 mm)
   --tape-width <mm>    label-maker tape width for tape mode (default 12)
+  --no-official        ignore bundled official map geometry (generate the layout instead)
   --map-svg <file>     official/community schematic SVG: use its geometry instead of the algorithmic layout
   --font <file.ttf>    custom font (e.g. Noto Sans JP for CJK names)
   --fixture <name>     use a bundled network fixture instead of fetching (paris, london)
@@ -99,8 +100,12 @@ const wasm = await Module();
 wasm.setup();
 let lastStage = '';
 const mapSvg = opts['map-svg'] ? fs.readFileSync(opts['map-svg'] as string, 'utf8') : undefined;
+// Bundled official geometry (packages/core/fixtures/<city>.official.json) is used unless --no-official or --map-svg.
+const officialFile = path.join(corePkg, 'fixtures', `${slugify(city || net.displayName)}.official.json`);
+const officialExtract = !mapSvg && !opts['no-official'] && fs.existsSync(officialFile) ? JSON.parse(fs.readFileSync(officialFile, 'utf8')) : undefined;
+if (officialExtract) console.error(`Using the operator's official map geometry (${path.basename(officialFile)})`);
 const result = buildFromNetwork(net, {
-  params, font, manifold: wasm, mapSvg,
+  params, font, manifold: wasm, mapSvg, officialExtract,
   progress: (stage, frac, detail) => {
     const line = `${stage.padEnd(9)} ${(frac * 100).toFixed(0).padStart(3)}%  ${detail ?? ''}`;
     if (stage !== lastStage) { process.stderr.write('\n'); lastStage = stage; }

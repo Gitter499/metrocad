@@ -191,7 +191,7 @@ export function parseOverpass(data: OverpassResponse, geo: GeocodeResult, query:
     rawRoutes.push({ id: r.id, tags, stops, masterId: masterOf.get(r.id)?.id });
   }
 
-  const network = buildNetwork({ routes: rawRoutes, masters, nodes, tramStops: opts.tramStops });
+  const network = buildNetwork({ routes: rawRoutes, masters, nodes, tramStops: opts.tramStops ?? 'all' });
   const netOut = finishNetwork(network, data, geo, query, modes, endpoint);
   // Official-source overlays (e.g. SEPTA Regional Rail) replace OSM lines that are known to be incomplete.
   applyOfficialOverlays(netOut, {}, opts.log);

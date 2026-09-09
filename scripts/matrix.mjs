@@ -23,6 +23,8 @@ for (const city of cities) {
   const file = `packages/core/fixtures/${city}.json`;
   if (!fs.existsSync(file)) { console.log(`skip ${city}: no fixture`); continue; }
   const net = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const officialFile = `packages/core/fixtures/${city}.official.json`;
+  const officialExtract = fs.existsSync(officialFile) ? JSON.parse(fs.readFileSync(officialFile, 'utf8')) : undefined;
   for (const width of sizes) {
     const outFile = `docs/matrix/${city}-${width}.json`;
     if (fs.existsSync(outFile) && !process.env.FORCE) { console.log(`have ${outFile}`); continue; }
@@ -30,7 +32,7 @@ for (const city of cities) {
     // Feature scale: bigger walls get proportionally thicker lines and taller letters (anchored at 900 mm).
     const fs_ = Math.min(1.5, Math.max(0.8, width / 900));
     const params = { widthMm: width, lineWidth: Math.round(6 * fs_ * 10) / 10, labelFontSize: Math.max(4.5, Math.round(5.5 * fs_ * 10) / 10), farm: [{ printerId: 'bambu-a1-mini', count: 1, bed: { x: 180, y: 180 }, speedFactor: 1 }] };
-    const r = buildFromNetwork(net, { params, font, manifold: wasm });
+    const r = buildFromNetwork(net, { params, font, manifold: wasm, officialExtract });
     const sliced = sliceAndSchedule(r, wasm, { changeoverMin: 8 });
     const jobs = sliced.plates.map((p) => ({ id: p.plateId, name: p.name, timeSec: p.stats.timeSec }));
     const farms = {};

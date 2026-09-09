@@ -6,6 +6,7 @@ import fontUrl from '@metrocad/core/fonts/Inter-Bold.ttf?url';
 import parisUrl from '@metrocad/core/fixtures/paris.json?url';
 import londonUrl from '@metrocad/core/fixtures/london.json?url';
 import philadelphiaUrl from '@metrocad/core/fixtures/philadelphia.json?url';
+import philadelphiaOfficialUrl from '@metrocad/core/fixtures/philadelphia.official.json?url';
 import pittsburghUrl from '@metrocad/core/fixtures/pittsburgh.json?url';
 import tokyoUrl from '@metrocad/core/fixtures/tokyo.json?url';
 import moscowUrl from '@metrocad/core/fixtures/moscow.json?url';
@@ -18,6 +19,8 @@ import {
 } from '@metrocad/core';
 import type { ToWorker, FromWorker, DisplayPart } from './protocol.js';
 
+// Official map geometry bundled per city (line polylines + label anchors extracted from the operator's own diagram).
+const OFFICIAL: Record<string, { url: string; title: string }> = { philadelphia: { url: philadelphiaOfficialUrl, title: "SEPTA Regional Rail & Rail Transit map (June 2026), geometry only" } };
 const FIXTURES: Record<string, string> = { paris: parisUrl, london: londonUrl, philadelphia: philadelphiaUrl, pittsburgh: pittsburghUrl, tokyo: tokyoUrl, moscow: moscowUrl, vienna: viennaUrl, atlanta: atlantaUrl, 'san-francisco': sanFranciscoUrl };
 
 let manifold: ManifoldToplevel | undefined;
@@ -60,8 +63,12 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       // Official map geometry: user-supplied SVG, or a known community schematic from Wikimedia Commons.
       let mapSvg = msg.officialMap === 'custom' ? msg.mapSvg : undefined;
       let mapSource: string | undefined = mapSvg ? 'your SVG' : undefined;
+      let officialExtract: any;
       if (msg.officialMap === 'auto') {
-        const known = knownMapFor(currentCity, net.lines[0]?.network) ?? knownMapFor(net.displayName);
+        const slug = slugify(currentCity);
+        const bundled = OFFICIAL[slug] ?? OFFICIAL[Object.keys(OFFICIAL).find((k) => slugify(net.displayName).includes(k)) ?? ''];
+        if (bundled) { officialExtract = await (await fetch(bundled.url)).json(); mapSource = bundled.title; }
+        const known = officialExtract ? undefined : (knownMapFor(currentCity, net.lines[0]?.network) ?? knownMapFor(net.displayName));
         if (known) {
           try {
             post({ type: 'status', id, stage: 'fetch', fraction: 0.9, detail: `Fetching official-style map: ${known.title}` });
@@ -72,7 +79,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
         }
       }
       current = buildFromNetwork(net, {
-        params: msg.params, font: font!, manifold: manifold!, mapSvg,
+        params: msg.params, font: font!, manifold: manifold!, mapSvg, officialExtract,
         progress: (stage, fraction, detail) => post({ type: 'status', id, stage, fraction, detail }),
       });
       currentSliced = undefined;

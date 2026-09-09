@@ -3,7 +3,7 @@ import type { ManifoldToplevel } from 'manifold-3d';
 import type { BuildResult, BuildStats, DesignParams, MetroNetwork, ProgressFn } from './types.js';
 import { withDefaults, type PartialParams } from './defaults.js';
 import { computeLayout, type LayoutResult } from './layout/index.js';
-import { layoutFromSvg, type SvgImportReport } from './svgimport.js';
+import { layoutFromSvg, layoutFromExtract, extractFromJson, type SvgImportReport, type SvgExtractJson } from './svgimport.js';
 import { buildParts, type TileGrid } from './geometry.js';
 import { packPlates } from './pack.js';
 import type { TextFont } from './text.js';
@@ -15,6 +15,8 @@ export interface BuildOptions {
   progress?: ProgressFn;
   /** Official/community schematic SVG: its geometry, station positions and label positions replace the algorithmic layout. */
   mapSvg?: string;
+  /** Official map geometry already extracted (a bundled fixture); used when no mapSvg is given. */
+  officialExtract?: SvgExtractJson;
 }
 
 export interface FullBuildResult extends BuildResult {
@@ -37,9 +39,15 @@ export function buildFromNetwork(net: MetroNetwork, opts: BuildOptions): FullBui
   const warnings: string[] = [];
   let layout: LayoutResult;
   let svgImport: SvgImportReport | undefined;
-  if (opts.mapSvg) {
+  if (!opts.mapSvg && opts.officialExtract) {
+    progress('layout', 0.4, 'Placing stations on the official map geometry');
+    const r = layoutFromExtract(extractFromJson(opts.officialExtract), net, params, opts.font, { log: (m) => progress('layout', 0.5, m) });
+    layout = r.layout; svgImport = r.report; net = r.net;
+    if (r.report.unmatchedStations.length) warnings.push(`${r.report.unmatchedStations.length} stations are not on the official map and were left out: ${r.report.unmatchedStations.slice(0, 12).join(', ')}${r.report.unmatchedStations.length > 12 ? '…' : ''}`);
+  } else if (opts.mapSvg) {
     progress('layout', 0, 'Importing official map geometry');
     const r = layoutFromSvg(opts.mapSvg, net, params, opts.font, { log: (m) => progress('layout', 0.5, m) });
+    net = r.net;
     warnings.push(`Layout imported from the official map drawing: ${r.report.matchedStations}/${net.stations.length} stations matched`);
     layout = r.layout; svgImport = r.report;
     if (r.report.unmatchedStations.length) warnings.push(`${r.report.unmatchedStations.length} stations not found in the SVG: ${r.report.unmatchedStations.slice(0, 8).join(', ')}${r.report.unmatchedStations.length > 8 ? '…' : ''}`);

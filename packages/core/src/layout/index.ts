@@ -1,9 +1,10 @@
 /** Layout orchestration: network -> MapLayout (mm). */
-import type { DesignParams, LayoutLabel, LayoutLine, LayoutStation, MapLayout, MetroNetwork, Vec2 } from '../types.js';
+import type { Station, DesignParams, LayoutLabel, LayoutLine, LayoutStation, MapLayout, MetroNetwork, Vec2 } from '../types.js';
 import { buildStationGraph, type StationGraph } from './graph.js';
 import { layoutReducedGraph, snapToGrid, straighten, applyFisheye, relaxMajors } from './force.js';
 import { buildCorridorGeometry, splitForBed, paramOf, pointAt, dedupe, pathLength, type CorridorGeometry } from './route.js';
 import { placeLabels, type LabelCandidateInput, type Obstacles } from './labels.js';
+import { thinTramStops, mergeNearbyInterchanges } from '../network.js';
 import { bboxOf, dist, add, sub, mul, fromAngle } from '../vec.js';
 import type { TextFont } from '../text.js';
 
@@ -41,6 +42,31 @@ export function dotRadius(p: DesignParams): number {
 }
 
 export function computeLayout(net: MetroNetwork, params: DesignParams, font: TextFont, log?: (m: string) => void): LayoutResult {
+  if ((params.tramStops ?? 'major') !== 'all' && net.lines.some((l) => l.mode === 'tram')) {
+    // Surface tram stops every couple of blocks would swamp a generated map; keep termini, branches, interchanges.
+    const copy: MetroNetwork = { ...net, lines: net.lines.map((l) => ({ ...l, sequences: l.sequences.map((q) => [...q]) })), stations: net.stations.map((s) => ({ ...s, lines: [...s.lines] })) };
+    thinTramStops(copy.lines, copy.stations);
+    for (const s of copy.stations) s.lines = copy.lines.filter((l) => l.sequences.some((q) => q.includes(s.id))).map((l) => l.id);
+    copy.stations = copy.stations.filter((s) => s.lines.length);
+    net = copy;
+  }
+  // Generated layouts draw walking interchanges (Bank/Monument, City Hall/15th Street/Suburban) as one node.
+  {
+    const copy: MetroNetwork = { ...net, lines: net.lines.map((l) => ({ ...l, sequences: l.sequences.map((q) => [...q]) })), stations: net.stations.map((s) => ({ ...s, lines: [...s.lines], osmIds: [...s.osmIds] })) };
+    for (const group of net.interchanges ?? []) {
+      const members = group.map((id) => copy.stations.find((s) => s.id === id)).filter((s): s is Station => !!s);
+      const [a, ...rest] = members;
+      for (const b of rest) {
+        if (!a.name.includes(b.name)) a.name = `${a.name} / ${b.name}`;
+        for (const l of copy.lines) l.sequences = l.sequences.map((q) => q.map((id) => (id === b.id ? a.id : id)).filter((id, k, arr) => k === 0 || arr[k - 1] !== id));
+        copy.stations = copy.stations.filter((s) => s !== b);
+      }
+    }
+    mergeNearbyInterchanges(copy.stations, copy.lines, 220);
+    for (const s of copy.stations) s.lines = copy.lines.filter((l) => l.sequences.some((q) => q.includes(s.id))).map((l) => l.id);
+    copy.stations = copy.stations.filter((s) => s.lines.length);
+    net = copy;
+  }
   const graph = buildStationGraph(net);
   const lo0 = params.layout;
   // Octilinear for networks with up to ~8 distinct colours (same-coloured services share ribbons); larger ones read better semi-geographic.
