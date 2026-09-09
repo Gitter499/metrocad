@@ -10,9 +10,14 @@
       "import": "./dist/index.js"
     },
     "./fonts/*": "./fonts/*",
-    "./fixtures/*": "./fixtures/*"
+    "./fixtures/*": "./fixtures/*",
+    "./package.json": "./package.json"
   },
-  "files": ["dist", "fonts", "fixtures"],
+  "files": [
+    "dist",
+    "fonts",
+    "fixtures"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

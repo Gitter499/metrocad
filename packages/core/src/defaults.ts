@@ -49,7 +49,13 @@ export const DEFAULT_PARAMS: DesignParams = {
   quality: 'print',
 };
 
-export function withDefaults(p: Partial<DesignParams> & { layout?: Partial<DesignParams['layout']>; colors?: Partial<DesignParams['colors']>; bed?: DesignParams['bed'] }): DesignParams {
+export type PartialParams = Omit<Partial<DesignParams>, 'layout' | 'colors' | 'bed'> & {
+  layout?: Partial<DesignParams['layout']>;
+  colors?: Partial<DesignParams['colors']>;
+  bed?: Partial<DesignParams['bed']>;
+};
+
+export function withDefaults(p: PartialParams): DesignParams {
   return {
     ...DEFAULT_PARAMS,
     ...p,
