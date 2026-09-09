@@ -8,7 +8,7 @@
   "lines": 15,
   "stations": 215,
   "labels": 193,
-  "parts": 770,
+  "parts": 766,
   "byKind": {
     "line": 83,
     "ring": 66,
@@ -16,19 +16,20 @@
     "dot": 149,
     "labelPlate": 193,
     "labelText": 193,
-    "tile": 20
+    "tile": 16
   },
-  "plates": 40,
-  "tiles": "4×5",
-  "grams": 1171,
-  "costUsd": 25.77,
-  "printHours": 86.5,
+  "plates": 36,
+  "tiles": "16",
+  "baseAreaPct": 48,
+  "grams": 686,
+  "costUsd": 15.1,
+  "printHours": 59.7,
   "farms": {
-    "1 × A1 mini": 91.7,
-    "3 × A1 mini": 30.7,
-    "3 × A1 mini + 1 × S3": 24.3,
-    "9 × A1 mini + 2 × S3": 8.7
+    "1 × A1 mini": 64.3,
+    "3 × A1 mini": 21.4,
+    "3 × A1 mini + 1 × S3": 17.1,
+    "9 × A1 mini + 2 × S3": 6.3
   },
-  "assemblyHours": 8.1,
-  "buildSec": 58
+  "assemblyHours": 7.9,
+  "buildSec": 71
 }

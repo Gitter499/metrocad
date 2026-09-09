@@ -6,29 +6,30 @@
   "labelFontSize": 4.5,
   "height": 610,
   "lines": 20,
-  "stations": 280,
-  "labels": 259,
-  "parts": 901,
+  "stations": 281,
+  "labels": 260,
+  "parts": 899,
   "byKind": {
-    "line": 54,
-    "dot": 247,
+    "line": 53,
+    "dot": 248,
     "ring": 33,
     "plug": 33,
-    "labelPlate": 259,
-    "labelText": 259,
-    "tile": 16
+    "labelPlate": 260,
+    "labelText": 260,
+    "tile": 12
   },
-  "plates": 29,
-  "tiles": "4×4",
-  "grams": 842,
-  "costUsd": 18.53,
-  "printHours": 64.5,
+  "plates": 24,
+  "tiles": "12",
+  "baseAreaPct": 45,
+  "grams": 468,
+  "costUsd": 10.3,
+  "printHours": 43.1,
   "farms": {
-    "1 × A1 mini": 68.3,
-    "3 × A1 mini": 22.9,
-    "3 × A1 mini + 1 × S3": 18.1,
-    "9 × A1 mini + 2 × S3": 6.6
+    "1 × A1 mini": 46.2,
+    "3 × A1 mini": 15.3,
+    "3 × A1 mini + 1 × S3": 12.4,
+    "9 × A1 mini + 2 × S3": 4.8
   },
-  "assemblyHours": 8,
-  "buildSec": 71
+  "assemblyHours": 7.8,
+  "buildSec": 77
 }
