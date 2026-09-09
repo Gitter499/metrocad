@@ -1,0 +1,32 @@
+{
+  "city": "paris",
+  "place": "Paris",
+  "width": 900,
+  "height": 975,
+  "lines": 16,
+  "stations": 321,
+  "labels": 193,
+  "parts": 993,
+  "byKind": {
+    "line": 161,
+    "ring": 89,
+    "plug": 89,
+    "dot": 232,
+    "labelPlate": 193,
+    "labelText": 193,
+    "tile": 36
+  },
+  "plates": 58,
+  "tiles": "6×6",
+  "grams": 1955,
+  "costUsd": 43.01,
+  "printHours": 141.4,
+  "farms": {
+    "1 × A1 mini": 149,
+    "3 × A1 mini": 49.6,
+    "3 × A1 mini + 1 × S3": 39.5,
+    "9 × A1 mini + 2 × S3": 14.5
+  },
+  "assemblyHours": 11.9,
+  "buildSec": 99
+}

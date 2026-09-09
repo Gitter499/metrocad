@@ -1,0 +1,32 @@
+{
+  "city": "pittsburgh",
+  "place": "Pittsburgh",
+  "width": 900,
+  "height": 1260,
+  "lines": 3,
+  "stations": 51,
+  "labels": 51,
+  "parts": 287,
+  "byKind": {
+    "line": 61,
+    "ring": 25,
+    "plug": 25,
+    "dot": 26,
+    "labelPlate": 51,
+    "labelText": 51,
+    "tile": 48
+  },
+  "plates": 54,
+  "tiles": "6×8",
+  "grams": 2263,
+  "costUsd": 49.78,
+  "printHours": 144.2,
+  "farms": {
+    "1 × A1 mini": 151.3,
+    "3 × A1 mini": 50.5,
+    "3 × A1 mini + 1 × S3": 40.4,
+    "9 × A1 mini + 2 × S3": 14.6
+  },
+  "assemblyHours": 5.4,
+  "buildSec": 27
+}

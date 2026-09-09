@@ -1,0 +1,32 @@
+{
+  "city": "philadelphia",
+  "place": "Philadelphia",
+  "width": 600,
+  "height": 530,
+  "lines": 3,
+  "stations": 63,
+  "labels": 57,
+  "parts": 215,
+  "byKind": {
+    "line": 13,
+    "ring": 9,
+    "plug": 9,
+    "dot": 54,
+    "labelPlate": 57,
+    "labelText": 57,
+    "tile": 16
+  },
+  "plates": 22,
+  "tiles": "4×4",
+  "grams": 646,
+  "costUsd": 14.22,
+  "printHours": 43.4,
+  "farms": {
+    "1 × A1 mini": 46.2,
+    "3 × A1 mini": 15.4,
+    "3 × A1 mini + 1 × S3": 12.8,
+    "9 × A1 mini + 2 × S3": 5
+  },
+  "assemblyHours": 2.4,
+  "buildSec": 20
+}
