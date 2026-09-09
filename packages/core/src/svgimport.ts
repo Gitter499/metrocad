@@ -399,7 +399,12 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
   const candidates = [...colourStats.entries()].filter(([c, s]) => s.len > 50 && c !== '#ffffff');
   // Colours that are only ever short closed shapes (station outlines in black) are not route lines.
   const longLen = new Map<string, number>();
-  for (const [c, list] of ex.strokes) { const minL = Math.max(ex.width, ex.height) * 0.03; longLen.set(c, list.reduce((a, p) => a + (pathLength(p.pts) > minL ? pathLength(p.pts) : 0), 0)); }
+  for (const [c, list] of ex.strokes) {
+    const page = Math.max(ex.width, ex.height), minL = page * 0.03;
+    // a closed shape smaller than 5 % of the page (station ovals, icons) is not a route piece whatever its perimeter
+    const isBlob = (p: Vec2[]) => { const bb = bboxOf(p); return dist(p[0], p[p.length - 1]) < 1e-3 && Math.max(bb.w, bb.h) < page * 0.05; };
+    longLen.set(c, list.reduce((a, p) => a + (pathLength(p.pts) > minL && !isBlob(p.pts) ? pathLength(p.pts) : 0), 0));
+  }
   const routeLike = (c: string) => (longLen.get(c) ?? 0) > Math.max(ex.width, ex.height) * 0.2;
   const tol = opts.colorTolerance ?? 230;
   // Station label positions in SVG units, per station name.
