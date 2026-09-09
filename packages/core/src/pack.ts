@@ -50,7 +50,7 @@ export function packPlates(parts: Part[], params: DesignParams, opts: PackOption
   const groups = new Map<string, { color: string; colorName: string; colorChange?: Plate['colorChange']; items: Item[] }>();
   const labelGroups = new Map<string, Part[]>();
   for (const p of parts) {
-    if (p.kind === 'tile') continue;
+    if (p.kind === 'tile' || p.kind === 'tape' || p.kind === 'tapeText') continue;
     if (p.group) { const g = labelGroups.get(p.group) ?? []; g.push(p); labelGroups.set(p.group, g); continue; }
     const k = `${p.color}|${p.colorName}`;
     const g = groups.get(k) ?? { color: p.color, colorName: p.colorName, items: [] };

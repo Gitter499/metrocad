@@ -47,8 +47,8 @@ export interface MetroNetwork {
 
 /* ----------------------------- Layout ----------------------------- */
 
-/** semi: geographic shape with an enlarged centre, corridors smoothed to 30° steps (official-map look) · schematic: strict octilinear grid · geographic: raw positions. */
-export type LayoutMode = 'geographic' | 'schematic' | 'semi';
+/** auto: schematic for small networks (≤ 6 lines, the way US operators draw them), semi for big ones · semi: geographic shape with an enlarged centre, corridors smoothed to 30° steps (official-map look) · schematic: strict octilinear grid · geographic: raw positions. */
+export type LayoutMode = 'auto' | 'geographic' | 'schematic' | 'semi';
 
 export interface LayoutOptions {
   mode: LayoutMode;
@@ -226,7 +226,7 @@ export interface MeshData {
   indices: Uint32Array;
 }
 
-export type PartKind = 'tile' | 'line' | 'plug' | 'ring' | 'dot' | 'label' | 'labelText' | 'labelPlate';
+export type PartKind = 'tile' | 'line' | 'plug' | 'ring' | 'dot' | 'label' | 'labelText' | 'labelPlate' | 'tape' | 'tapeText';
 
 export interface Part {
   id: string;

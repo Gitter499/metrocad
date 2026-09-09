@@ -295,13 +295,22 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
   let li = 0;
   for (const lb of layout.labels) {
     if (lb.tape) {
-      // Label-maker tape: a shallow rectangular pocket in the tile, nothing to print.
+      // Label-maker tape: a shallow rectangular pocket in the tile, nothing to print. For the preview/AR we
+      // still emit the tape (white strip + dark text) as display-only parts (kind 'tape'), never on a plate.
       const t = (lb.angle * Math.PI) / 180;
       let rect = CrossSection.square([lb.width, lb.height], false);
       const r = rect.rotate(lb.angle); rect.delete();
       const pocket = r.translate([lb.x, lb.y]); r.delete();
       tapePocketCS.push(keep(pocket));
-      void t;
+      const place = (p: Vec2): Vec2 => add([lb.x, lb.y], rotate(p, t));
+      const stripM = pocket.extrude(0.5).translate([0, 0, z.baseTop - 0.6]);
+      const polys = font.outlines(lb.text, lb.fontSize, { flatness: 0.3 }).map((poly) => poly.map((p) => place(add(lb.textOrigin, p))));
+      const txt = new CrossSection(polys, 'NonZero');
+      const inset = pocket.offset(-0.3, 'Miter');
+      const clipped = txt.intersect(inset); txt.delete(); inset.delete();
+      const txtM = clipped.extrude(0.15).translate([0, 0, z.baseTop - 0.1]); clipped.delete();
+      pushPart(stripM, { id: `tape-${lb.n}`, name: `${lb.text} tape label`, kind: 'tape', color: '#ffffff', colorName: 'Tape label', stationId: lb.stationId, tag: `T${String(lb.n).padStart(3, '0')}` });
+      pushPart(txtM, { id: `tape-${lb.n}-text`, name: `${lb.text} tape text`, kind: 'tapeText', color: '#111111', colorName: 'Tape text', stationId: lb.stationId });
       continue;
     }
     const t = (lb.angle * Math.PI) / 180;

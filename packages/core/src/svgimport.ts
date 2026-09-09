@@ -292,7 +292,7 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   const colourStats = new Map<string, { len: number; maxW: number; n: number }>();
   for (const [c, list] of ex.strokes) { let len = 0, maxW = 0; for (const p of list) { len += pathLength(p.pts); maxW = Math.max(maxW, p.width); } colourStats.set(c, { len, maxW, n: list.length }); }
   const candidates = [...colourStats.entries()].filter(([c, s]) => s.len > 50 && c !== '#ffffff');
-  const tol = opts.colorTolerance ?? 120;
+  const tol = opts.colorTolerance ?? 230;
   // Station label positions in SVG units, per station name.
   const textPos = new Map<string, SvgExtract['texts'][number]>();
   for (const t of ex.texts) { const k = normalizeName(t.name); if (k && !textPos.has(k)) textPos.set(k, t); }

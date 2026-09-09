@@ -42,7 +42,10 @@ export function dotRadius(p: DesignParams): number {
 
 export function computeLayout(net: MetroNetwork, params: DesignParams, font: TextFont, log?: (m: string) => void): LayoutResult {
   const graph = buildStationGraph(net);
-  const lo = params.layout;
+  const lo0 = params.layout;
+  const resolvedMode = lo0.mode === 'auto' ? (net.lines.length <= 6 ? 'schematic' : 'semi') : lo0.mode;
+  const lo = { ...lo0, mode: resolvedMode };
+  params = { ...params, layout: lo };
   const semi = lo.mode === 'semi';
   const strength = lo.mode === 'geographic' || semi ? 0 : lo.schematicStrength;
   if (semi) {

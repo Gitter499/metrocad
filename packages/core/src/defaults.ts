@@ -45,7 +45,7 @@ export const DEFAULT_PARAMS: DesignParams = {
   },
 
   layout: {
-    mode: 'semi',
+    mode: 'auto',
     schematicStrength: 1,
     fisheye: 0.7,
     minSpacing: 1,

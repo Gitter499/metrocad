@@ -26,7 +26,7 @@ export interface FullBuildResult extends BuildResult {
 /** Approximate printed mass: solid-ish parts at ~90 %, tiles at ~45 % (walls + 15 % infill). PLA 1.24 g/cm³. */
 export function estimateGrams(parts: BuildResult['parts']): number {
   let g = 0;
-  for (const p of parts) g += (p.volumeMm3 / 1000) * 1.24 * (p.kind === 'tile' ? 0.45 : 0.9);
+  for (const p of parts) { if (p.kind === 'tape' || p.kind === 'tapeText') continue; g += (p.volumeMm3 / 1000) * 1.24 * (p.kind === 'tile' ? 0.45 : 0.9); }
   return g;
 }
 
@@ -59,7 +59,7 @@ export function buildFromNetwork(net: MetroNetwork, opts: BuildOptions): FullBui
     lines: layout.lines.length,
     labels: layout.labels.length,
     unlabeled: layout.unlabeled.length,
-    parts: geo.parts.length,
+    parts: geo.parts.filter((p) => p.kind !== 'tape' && p.kind !== 'tapeText').length,
     plates: plates.length,
     triangles: geo.parts.reduce((s, p) => s + p.triangles, 0),
     volumeMm3: geo.parts.reduce((s, p) => s + p.volumeMm3, 0),

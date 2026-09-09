@@ -21,7 +21,17 @@ export interface ForceOptions {
 }
 
 const OCT = Math.PI / 4;
-export const snapAngle = (t: number) => Math.round(t / OCT) * OCT;
+/**
+ * Snap to the octilinear grid with a preference for horizontals/verticals: official diagrams use diagonals
+ * only when a line really runs diagonally (within ~15° of 45°); everything else is drawn straight.
+ */
+export const snapAngle = (t: number) => {
+  const q = Math.PI / 2;
+  const base = Math.round(t / q) * q;            // nearest axis
+  const off = t - base;                           // -45°..45°
+  if (Math.abs(off) < Math.PI / 6) return base;   // within 30° of an axis → axis
+  return base + Math.sign(off) * OCT;             // otherwise the diagonal on that side
+};
 
 /** Radial fisheye about the degree-weighted centroid: expands the dense core. */
 export function applyFisheye(nodes: Iterable<GNode>, amount: number): void {

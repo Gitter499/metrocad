@@ -62,7 +62,7 @@ export function buildBundle(r: FullBuildResult, opts: BundleOptions = {}): Bundl
 
   // Individual STLs
   if (opts.individualStls !== false) {
-    r.parts.forEach((p, i) => {
+    r.parts.filter((p) => p.kind !== 'tape' && p.kind !== 'tapeText').forEach((p, i) => {
       const dir = p.kind === 'tile' ? 'tiles' : p.kind === 'line' ? `lines/${slugify(p.colorName)}` : p.kind.startsWith('label') ? 'labels' : 'stations';
       files[`parts/${dir}/${p.id}.stl`] = meshToStl(p.mesh, p.name, { dx: -p.bbox.min[0], dy: -p.bbox.min[1], dz: -p.bbox.min[2] });
       if (i % 100 === 0) progress(0.6 + 0.2 * (i / r.parts.length), `Part STL ${i + 1}/${r.parts.length}`);
@@ -70,7 +70,7 @@ export function buildBundle(r: FullBuildResult, opts: BundleOptions = {}): Bundl
   }
 
   // Assembled 3MF (all parts in place, coloured) — useful for multi-material printers and viewing.
-  files['assembled.3mf'] = write3mf(r.parts.map((p) => ({ name: p.name, mesh: p.mesh, color: p.color })), `${r.network.displayName} — assembled`);
+  files['assembled.3mf'] = write3mf(r.parts.filter((p) => p.kind !== 'tape' && p.kind !== 'tapeText').map((p) => ({ name: p.name, mesh: p.mesh, color: p.color })), `${r.network.displayName} — assembled`);
 
   // Previews / AR
   const bounds = { width: r.layout.width, height: r.layout.height };

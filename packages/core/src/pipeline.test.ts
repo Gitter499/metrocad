@@ -87,7 +87,7 @@ describe('geometry + packing + export', () => {
       const colors = new Set(plate.items.flatMap((it) => itemBBox(result.parts, it.partId).parts.map((p) => p.color)));
       expect(colors.size).toBeLessThanOrEqual(plate.colorChange ? 2 : 1);
     }
-    expect(seen.size).toBe(result.parts.length);
+    expect(seen.size).toBe(result.parts.filter((p) => p.kind !== 'tape' && p.kind !== 'tapeText').length);
   });
   it('writes valid STL / 3MF / GLB / USDZ', () => {
     const part = result.parts.find((p) => p.kind === 'line')!;
