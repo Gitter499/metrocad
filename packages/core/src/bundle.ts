@@ -44,7 +44,7 @@ export function buildBundle(r: FullBuildResult, opts: BundleOptions = {}): Bundl
     for (const item of plate.items) {
       const bb = itemBBox(r.parts, item.partId);
       for (const p of bb.parts) {
-        const t = placementTransform(bb, item, bb.min[2]);
+        const t = placementTransform(item, bb.min[2]);
         objects.push({ name: p.name, mesh: p.mesh, color: p.color, transform: t });
         stlChunks.push({ mesh: p.mesh, t, name: p.name });
       }

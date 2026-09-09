@@ -68,12 +68,12 @@ export function partsToGlb(parts: Part[], opts: GlbOptions = {}): Uint8Array {
     }
     // Flat-shaded, unindexed positions + normals
     let triCount = 0;
-    for (const p of group) triCount += p.mesh.indices.length / 3;
+    for (const p of group) triCount += (p.previewMesh ?? p.mesh).indices.length / 3;
     const pos = new Float32Array(triCount * 9), nor = new Float32Array(triCount * 9);
     let o = 0;
     const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
     for (const p of group) {
-      const P = p.mesh.positions, I = p.mesh.indices;
+      const M = p.previewMesh ?? p.mesh; const P = M.positions, I = M.indices;
       for (let t = 0; t < I.length; t += 3) {
         const v: number[][] = [];
         for (let k = 0; k < 3; k++) {

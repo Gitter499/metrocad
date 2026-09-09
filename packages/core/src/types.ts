@@ -210,6 +210,8 @@ export interface Part {
   group?: string;
   /** Mesh in assembled map coordinates (mm). */
   mesh: MeshData;
+  /** Lighter mesh for on-screen / AR use (same shape, coarser curves). */
+  previewMesh?: MeshData;
   bbox: { min: [number, number, number]; max: [number, number, number] };
   volumeMm3: number;
   triangles: number;
@@ -222,11 +224,14 @@ export interface Part {
 
 export interface PlateItem {
   partId: string;
-  /** Translation applied to the part (after moving its bbox-min to origin) on the plate. */
+  /** Plate position (mm) of the item's footprint bbox-min after rotation. */
   x: number;
   y: number;
-  /** 0 or 90 degrees. */
+  /** Rotation about z in degrees, applied about the origin before translating. */
   rotation: number;
+  /** Translation applied after rotation. */
+  dx: number;
+  dy: number;
 }
 
 export interface Plate {

@@ -1,5 +1,5 @@
 /** Font handling: measure text and produce glyph outline polygons (mm, y-up) via opentype.js. */
-import opentype from 'opentype.js';
+import { parse as parseFont, type Font, type Glyph } from 'opentype.js';
 import type { Vec2 } from './types.js';
 
 export interface TextMetrics {
@@ -17,24 +17,24 @@ export interface TextOptions {
 }
 
 export class TextFont {
-  readonly font: opentype.Font;
+  readonly font: Font;
   readonly name: string;
-  private glyphCache = new Map<string, opentype.Glyph>();
+  private glyphCache = new Map<string, Glyph>();
 
-  constructor(font: opentype.Font, name = 'font') {
+  constructor(font: Font, name = 'font') {
     this.font = font;
     this.name = name;
   }
 
   static fromBuffer(buf: ArrayBuffer | Uint8Array, name?: string): TextFont {
     const ab = buf instanceof Uint8Array ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : buf;
-    const font = opentype.parse(ab);
+    const font = parseFont(ab);
     const fam = (font.names as any)?.fontFamily?.en ?? name ?? 'font';
     const sub = (font.names as any)?.fontSubfamily?.en ?? '';
     return new TextFont(font, name ?? `${fam} ${sub}`.trim());
   }
 
-  private glyph(ch: string): opentype.Glyph {
+  private glyph(ch: string): Glyph {
     let g = this.glyphCache.get(ch);
     if (!g) { g = this.font.charToGlyph(ch); this.glyphCache.set(ch, g); }
     return g;
@@ -58,12 +58,12 @@ export class TextFont {
   }
 
   /** Lay out glyphs: returns per-glyph x positions and the total advance (mm). */
-  private layout(text: string, size: number, tracking = 0): { glyphs: opentype.Glyph[]; xs: number[]; advance: number } {
+  private layout(text: string, size: number, tracking = 0): { glyphs: Glyph[]; xs: number[]; advance: number } {
     const scale = size / this.font.unitsPerEm;
-    const glyphs: opentype.Glyph[] = [];
+    const glyphs: Glyph[] = [];
     const xs: number[] = [];
     let x = 0;
-    let prev: opentype.Glyph | undefined;
+    let prev: Glyph | undefined;
     for (const ch of text) {
       const g = this.glyph(ch);
       if (prev) {

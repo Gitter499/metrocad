@@ -16,7 +16,7 @@ usage: metrocad <city> [options]
   --out <dir>          output directory (default: ./out/<city>)
   --width <mm>         finished width (default 900)
   --height <mm>        finished height (default: from map aspect)
-  --bed <x>x<y>        printer bed size in mm (default 250x250)
+  --bed <x>x<y>        printer bed size in mm (default 180x180, Bambu A1 mini)
   --modes <list>       transit modes to try, in order (default subway,light_rail,tram)
   --all-modes          include every listed mode instead of the first with results
   --labels all|major|none
@@ -68,7 +68,7 @@ else {
 }
 console.error(`${net.displayName}: ${net.lines.length} lines, ${net.stations.length} stations`);
 
-const bed = ((opts.bed as string) ?? '250x250').split('x').map(Number);
+const bed = ((opts.bed as string) ?? '180x180').split('x').map(Number);
 const params: PartialParams = {
   widthMm: Number(opts.width ?? 900),
   heightMm: opts.height ? Number(opts.height) : undefined,

@@ -227,10 +227,15 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     if (text.area() < 0.05) { text.delete(); plateP.delete(); warnings.push(`Label "${lb.text}" produced no glyph geometry`); continue; }
     const plateM = plateP.extrude(plateH).translate([0, 0, z.labelPocketFloor]);
     const textM = text.extrude(textH).translate([0, 0, z.baseTop]);
+    // Coarse copy of the letters for on-screen/AR use.
+    const coarseCS = text.simplify(0.1);
+    const coarseM = coarseCS.extrude(textH).translate([0, 0, z.baseTop]);
+    const previewText = meshOf(coarseM);
+    coarseCS.delete(); coarseM.delete();
     const st = stationById.get(lb.stationId);
     const gid = `label-${lb.stationId}`;
     pushPart(plateM, { id: `${gid}-plate`, name: `${lb.text} label plate`, kind: 'labelPlate', color: params.colors.labelPlate, colorName: 'Label plate', group: gid, stationId: st?.id });
-    pushPart(textM, { id: `${gid}-text`, name: `${lb.text} label text`, kind: 'labelText', color: params.colors.labelText, colorName: 'Label text', group: gid, stationId: st?.id });
+    pushPart(textM, { id: `${gid}-text`, name: `${lb.text} label text`, kind: 'labelText', color: params.colors.labelText, colorName: 'Label text', group: gid, stationId: st?.id }, previewText);
     labelPlateCS.push(keep(plateP));
     text.delete();
     li++;
@@ -290,7 +295,11 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
   progress('geometry', 1, `${parts.length} parts, ${laps} half-lap crossings`);
   return { parts, warnings, tiles };
 
-  function pushPart(man: Manifold, meta: Omit<Part, 'mesh' | 'bbox' | 'volumeMm3' | 'triangles' | 'printZ'>) {
+  function meshOf(man: Manifold): MeshData {
+    const mesh = man.getMesh();
+    return { positions: mesh.numProp === 3 ? new Float32Array(mesh.vertProperties) : stripProps(mesh.vertProperties, mesh.numProp), indices: new Uint32Array(mesh.triVerts) };
+  }
+  function pushPart(man: Manifold, meta: Omit<Part, 'mesh' | 'bbox' | 'volumeMm3' | 'triangles' | 'printZ' | 'previewMesh'>, previewMesh?: MeshData) {
     const status = man.status();
     if (status !== 'NoError') { warnings.push(`${meta.name}: manifold error ${status}`); man.delete(); return; }
     if (man.isEmpty()) { man.delete(); return; }
@@ -298,7 +307,8 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     const bb = man.boundingBox();
     const part: Part = {
       ...meta,
-      mesh: { positions: new Float32Array(mesh.vertProperties.length === mesh.numProp * (mesh.vertProperties.length / mesh.numProp) && mesh.numProp === 3 ? mesh.vertProperties : stripProps(mesh.vertProperties, mesh.numProp)), indices: new Uint32Array(mesh.triVerts) },
+      previewMesh,
+      mesh: { positions: mesh.numProp === 3 ? new Float32Array(mesh.vertProperties) : stripProps(mesh.vertProperties, mesh.numProp), indices: new Uint32Array(mesh.triVerts) },
       bbox: { min: [bb.min[0], bb.min[1], bb.min[2]], max: [bb.max[0], bb.max[1], bb.max[2]] },
       volumeMm3: man.volume(),
       triangles: mesh.triVerts.length / 3,
@@ -319,6 +329,7 @@ function stripProps(v: Float32Array, numProp: number): Float32Array {
 function shiftZ(p: Part, dz: number) {
   const pos = p.mesh.positions;
   for (let i = 2; i < pos.length; i += 3) pos[i] += dz;
+  if (p.previewMesh) { const q = p.previewMesh.positions; for (let i = 2; i < q.length; i += 3) q[i] += dz; }
   p.bbox.min[2] += dz; p.bbox.max[2] += dz;
   p.printZ = -p.bbox.min[2];
 }

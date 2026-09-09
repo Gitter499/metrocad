@@ -3,8 +3,8 @@ import type { DesignParams } from './types.js';
 export const DEFAULT_PARAMS: DesignParams = {
   widthMm: 900,
   heightMm: undefined,
-  bed: { x: 250, y: 250 },
-  bedMargin: 5,
+  bed: { x: 180, y: 180 },
+  bedMargin: 4,
   clearance: 0.15,
 
   base: 'tiles',

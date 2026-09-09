@@ -74,26 +74,28 @@ export function partsToUsdz(parts: Part[], opts: UsdzOptions = {}): Uint8Array {
   // Meshes (mm -> m; map plane XY, extrusion +Z; for a vertical anchor, +Z faces the viewer)
   let gi = 0;
   for (const [color, group] of groups) {
-    let triCount = 0;
-    for (const p of group) triCount += p.mesh.indices.length / 3;
+    // Indexed points (shared vertices) with one normal per face keeps the ASCII file small.
     const pts: string[] = [];
     const idxs: string[] = [];
     const nrm: string[] = [];
-    let vi = 0;
+    let triCount = 0;
+    let base = 0;
     for (const p of group) {
-      const P = p.mesh.positions, I = p.mesh.indices;
+      const M = p.previewMesh ?? p.mesh;
+      const P = M.positions, I = M.indices;
+      const n = P.length / 3;
+      for (let i = 0; i < n; i++) pts.push(`(${f((P[i * 3] - cx) / 1000)}, ${f((P[i * 3 + 1] - cy) / 1000)}, ${f(P[i * 3 + 2] / 1000)})`);
       for (let t = 0; t < I.length; t += 3) {
-        const v: number[][] = [];
-        for (let k = 0; k < 3; k++) {
-          const i = I[t + k];
-          v.push([(P[i * 3] - cx) / 1000, (P[i * 3 + 1] - cy) / 1000, P[i * 3 + 2] / 1000]);
-        }
-        const ux = v[1][0] - v[0][0], uy = v[1][1] - v[0][1], uz = v[1][2] - v[0][2];
-        const wx = v[2][0] - v[0][0], wy = v[2][1] - v[0][1], wz = v[2][2] - v[0][2];
+        const a = I[t], b = I[t + 1], c = I[t + 2];
+        const ux = P[b * 3] - P[a * 3], uy = P[b * 3 + 1] - P[a * 3 + 1], uz = P[b * 3 + 2] - P[a * 3 + 2];
+        const wx = P[c * 3] - P[a * 3], wy = P[c * 3 + 1] - P[a * 3 + 1], wz = P[c * 3 + 2] - P[a * 3 + 2];
         let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
         const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
-        for (let k = 0; k < 3; k++) { pts.push(`(${f(v[k][0])}, ${f(v[k][1])}, ${f(v[k][2])})`); nrm.push(`(${f(nx)}, ${f(ny)}, ${f(nz)})`); idxs.push(String(vi++)); }
+        idxs.push(String(base + a), String(base + b), String(base + c));
+        nrm.push(`(${f(nx)}, ${f(ny)}, ${f(nz)})`);
+        triCount++;
       }
+      base += n;
     }
     const name = `Group${gi++}`;
     lines.push(`    def Mesh "${name}" (prepend apiSchemas = ["MaterialBindingAPI"])`);
@@ -102,7 +104,7 @@ export function partsToUsdz(parts: Part[], opts: UsdzOptions = {}): Uint8Array {
     lines.push(`        int[] faceVertexCounts = [${new Array(triCount).fill('3').join(', ')}]`);
     lines.push(`        int[] faceVertexIndices = [${idxs.join(', ')}]`);
     lines.push(`        point3f[] points = [${pts.join(', ')}]`);
-    lines.push(`        normal3f[] normals = [${nrm.join(', ')}] (interpolation = "faceVarying")`);
+    lines.push(`        normal3f[] normals = [${nrm.join(', ')}] (interpolation = "uniform")`);
     lines.push(`        rel material:binding = </MetroMap/Materials/${matName.get(color)}>`);
     lines.push('        uniform token subdivisionScheme = "none"');
     lines.push('    }');
