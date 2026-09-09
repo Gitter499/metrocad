@@ -29,11 +29,18 @@ Algorithms can only produce a map *in the style of* a transit diagram. To get th
 * **My SVG**: upload any official SVG (or `--map-svg file.svg` on the CLI). Operators often publish their diagrams as SVG/PDF; a PDF can be converted with Inkscape.
 * **Generated layout**: the algorithmic fallback for cities without a drawing. *Auto* picks strict octilinear for small networks (≤ 6 lines — the way SEPTA, PRT and most US operators draw theirs, horizontals/verticals preferred, diagonals only for genuinely diagonal runs) and semi-geographic for big ones (Paris-style).
 
-Philadelphia and Pittsburgh: Wikimedia Commons has no vector schematic of SEPTA Metro or the Pittsburgh T (only a regional map and a PNG), so the bundled renders use the octilinear generator. SEPTA and PRT publish their official diagrams as PDF; open the PDF in Inkscape, save as SVG, and load it with **Official map → My SVG file** (or `--map-svg`) to get the exact official geometry.
+Philadelphia and Pittsburgh, checked against the operators' own files: SEPTA's 2025 *Metro & Frequent Bus* network map PDF contains only a raster image (no vector paths or text), and its vector PDFs are single-line strip maps; PRT's T map PDF has vector paths but all text converted to outlines, so station names cannot be read. Neither can be imported as geometry yet (a raster/outlined map would need OCR and line tracing). The bundled renders for those two therefore come from the octilinear generator. Any vector map with real text — e.g. an SVG exported by the operator's designers — imports directly; PDFs convert with `python -c "import pymupdf; ..."` (see `scripts/pdf2svg.py`) or Inkscape.
 
 | Source drawing (Commons) | MetroCAD import (all 267 stations, 11 lines matched) |
 |---|---|
 | ![source](docs/screenshots/source-london-commons.png) | ![import](docs/screenshots/layout-london-official.png) |
+
+The same geometry built as parts, in the app (`docs/screenshots/london/`): wall at an angle, front, close-up, map, print beds, assemble, AR, farm schedule.
+
+| Wall | Close-up |
+|---|---|
+| ![wall](docs/screenshots/london/01-wall-angle.png) | ![close-up](docs/screenshots/london/03-wall-closeup.png) |
+| ![beds](docs/screenshots/london/05-print-beds.png) | ![assemble](docs/screenshots/london/07-assemble.png) |
 
 ## What you get
 
