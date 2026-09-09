@@ -7,6 +7,8 @@ import parisUrl from '@metrocad/core/fixtures/paris.json?url';
 import londonUrl from '@metrocad/core/fixtures/london.json?url';
 import philadelphiaUrl from '@metrocad/core/fixtures/philadelphia.json?url';
 import philadelphiaOfficialUrl from '@metrocad/core/fixtures/philadelphia.official.json?url';
+import parisOfficialUrl from '@metrocad/core/fixtures/paris.official.json?url';
+import londonOfficialUrl from '@metrocad/core/fixtures/london.official.json?url';
 import pittsburghUrl from '@metrocad/core/fixtures/pittsburgh.json?url';
 import tokyoUrl from '@metrocad/core/fixtures/tokyo.json?url';
 import moscowUrl from '@metrocad/core/fixtures/moscow.json?url';
@@ -20,7 +22,11 @@ import {
 import type { ToWorker, FromWorker, DisplayPart } from './protocol.js';
 
 // Official map geometry bundled per city (line polylines + label anchors extracted from the operator's own diagram).
-const OFFICIAL: Record<string, { url: string; title: string }> = { philadelphia: { url: philadelphiaOfficialUrl, title: "SEPTA Regional Rail & Rail Transit map (June 2026), geometry only" } };
+const OFFICIAL: Record<string, { url: string; title: string }> = {
+  philadelphia: { url: philadelphiaOfficialUrl, title: 'SEPTA Regional Rail & Rail Transit map (June 2026), geometry only' },
+  paris: { url: parisOfficialUrl, title: 'Plan schématique du réseau de Paris (Wikimedia Commons, CC BY-SA), geometry only' },
+  london: { url: londonOfficialUrl, title: 'London Underground, Overground, DLR and Elizabeth line map (Wikimedia Commons, CC BY-SA), geometry only' },
+};
 const FIXTURES: Record<string, string> = { paris: parisUrl, london: londonUrl, philadelphia: philadelphiaUrl, pittsburgh: pittsburghUrl, tokyo: tokyoUrl, moscow: moscowUrl, vienna: viennaUrl, atlanta: atlantaUrl, 'san-francisco': sanFranciscoUrl };
 
 let manifold: ManifoldToplevel | undefined;

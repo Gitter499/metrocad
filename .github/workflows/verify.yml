@@ -23,27 +23,24 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install pymupdf pillow
-      - name: Philadelphia vs SEPTA's Regional Rail & Rail Transit map
+      - name: Every city vs its official / reference map
         run: |
-          mkdir -p tmp/septa
-          curl -sSL -A "metrocad-verify" -o tmp/septa/septa.pdf "https://wwww.septa.org/wp-content/uploads/page/communication/Regional-Rail-Rail-Transit-Line-Map_JUNE26.pdf"
-          curl -sSL -A "metrocad-verify" -o tmp/septa/septa.png "https://wwww.septa.org/wp-content/uploads/page/communication/Regional-Rail-Rail-Transit-Line-Map_JUNE26.png"
-          python scripts/pdf2svg.py tmp/septa/septa.pdf tmp/septa/septa.svg
-          node scripts/verify-official.mjs philadelphia tmp/septa/septa.svg tmp/septa/septa.png 900 || echo "::warning::Philadelphia differs from SEPTA's map — see docs/verification-philadelphia.md"
+          for city in $(node -e "console.log(Object.keys(require('./packages/core/official-sources.json')).join(' '))"); do
+            node scripts/official-sync.mjs "$city" || echo "::warning::$city differs from its official map — see docs/verification-$city.md"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: verification-report
           path: |
-            docs/verification.md
-            docs/verification-philadelphia.md
-            docs/screenshots/verify-philadelphia.png
+            docs/verification*.md
+            docs/screenshots/verify-*.png
       - name: Commit report
         if: github.event_name != 'pull_request'
         run: |
           git config user.name "metrocad-verify[bot]"
           git config user.email "verify@metrocad.local"
-          git add docs/verification.md docs/verification-philadelphia.md docs/screenshots/verify-philadelphia.png
+          git add docs/verification*.md docs/screenshots/verify-*.png packages/core/fixtures/*.official.json
           git diff --cached --quiet && exit 0
           git commit -m "docs: refresh Wikidata verification report"
           git pull --rebase --autostash origin "${GITHUB_REF_NAME}"

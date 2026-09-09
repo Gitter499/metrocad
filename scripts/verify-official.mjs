@@ -4,7 +4,10 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { layoutFromSvg, withDefaults, renderSvg, TextFont } from '@metrocad/core';
-const [city, svgFile, pngFile, widthArg] = process.argv.slice(2);
+const [city, svgFile, pngArg, widthArg] = process.argv.slice(2);
+// The "official" side of the comparison: a raster from the operator, or the drawing itself rendered.
+let pngFile = pngArg;
+if (!pngFile || /\.svg$/i.test(pngFile)) { pngFile = `docs/screenshots/verify-${city}-official.png`; execFileSync('node', ['scripts/svg2png.mjs', pngArg || svgFile, pngFile]); }
 const W = Number(widthArg ?? 900);
 const net0 = JSON.parse(fs.readFileSync(`packages/core/fixtures/${city}.json`, 'utf8'));
 const fontBuf = fs.readFileSync('packages/core/fonts/Inter-Bold.ttf');
@@ -27,7 +30,8 @@ for (const ln of net.lines) {
   const colour = layout.lines.find((l) => l.id === ln.id)?.color;
   const segs = []; for (const lay of layout.lines.filter((l) => l.color === colour)) for (const ch of lay.chains) for (let i = 1; i < ch.points.length; i++) segs.push([ch.points[i - 1], ch.points[i]]);
   let offLine = 0;
-  for (const id of onMap) { const s = pos.get(id); const best = segs.reduce((m, [a, b]) => Math.min(m, segDist([s.x, s.y], a, b)), Infinity); if (best > params.lineWidth * 1.5) { offLine++; problems.push(`${ln.ref}: "${stById.get(id).name}" sits ${best.toFixed(0)} mm off the ${ln.ref} line (snapped to the wrong stroke?)`); } }
+  // An interchange drawn as several nodes (id, id~m2, …) is on the line if any of its nodes is.
+  for (const id of onMap) { const nodes = layout.stations.filter((s) => s.id === id || s.id.startsWith(id + '~m')); const best = Math.min(...nodes.map((s) => segs.reduce((m, [a, b]) => Math.min(m, segDist([s.x, s.y], a, b)), Infinity))); if (best > params.lineWidth * 1.5) { offLine++; problems.push(`${ln.ref}: "${stById.get(id).name}" sits ${best.toFixed(0)} mm off the ${ln.ref} line (snapped to the wrong stroke?)`); } }
   let jumps = 0;
   for (const seq of ln.sequences) { const here = seq.filter((id) => pos.has(id)); for (let i = 1; i < here.length; i++) { const a = pos.get(here[i - 1]), b = pos.get(here[i]); const dd = d([a.x, a.y], [b.x, b.y]); if (dd > W * 0.3) { jumps++; problems.push(`${ln.ref}: ${stById.get(here[i - 1]).name} → ${stById.get(here[i]).name} is ${dd.toFixed(0)} mm apart (a station out of place, or a gap in the traced line)`); } } }
   const col = report.lineColours.find((c) => c.ref === ln.ref);
@@ -54,6 +58,7 @@ a = a.resize((round(a.width * h / a.height), h)); b = b.resize((round(b.width * 
 out = Image.new('RGB', (a.width + b.width + 30, h), (255, 255, 255)); out.paste(a, (0, 0)); out.paste(b, (a.width + 30, 0))
 out.save('docs/screenshots/verify-${city}.png')`]);
 fs.unlinkSync(`docs/screenshots/verify-${city}-ours.png`);
+if (pngFile.endsWith(`verify-${city}-official.png`)) fs.unlinkSync(pngFile);
 // 4. Report
 const total = net.stations.length, matched = layout.stations.length;
 const md = [`# ${city[0].toUpperCase() + city.slice(1)}: our layout vs the operator's map`, '',

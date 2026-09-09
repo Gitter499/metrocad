@@ -504,7 +504,7 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
       let hits = 0; for (const p of pts) if (near(c, p, unitR)) hits++;
       // Hits weigh more the closer the colour is to the line's own: a parallel line of another colour running
       // past the same labels must not win just because its strokes are nearer.
-      const score = (hits / Math.max(1, pts.length)) * (1 - d / (tol * 1.5)) ;
+      const score = (hits / Math.max(1, pts.length)) * Math.pow(Math.max(0, 1 - d / tol), 1.5);
       tried.push(`${c}:${hits}/${d.toFixed(0)}`);
       if (!best || score > best.score) best = { c, score, d, hits };
     }
