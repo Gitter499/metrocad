@@ -22,3 +22,4 @@ export * from './farm.js';
 export * from './assembly.js';
 export * from './verify.js';
 export * from './svgimport.js';
+export * from './official/index.js';

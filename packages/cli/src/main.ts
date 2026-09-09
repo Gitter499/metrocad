@@ -25,12 +25,13 @@ usage: metrocad <city> [options]
   --labels all|major|none
   --label-size <mm>    label font size (default 5.5)
   --lang local|en      station name language (default local)
-  --base tiles|none    grooved base tiles (default) or floating parts + paper template
+  --base tiles|outline|none  grooved base tiles (default), tiles trimmed to the map outline (least filament), or floating parts + paper template
+  --base-margin <mm>   outline base: margin beyond the map content (default 8)
   --keyholes           add keyhole slots to the back of the tiles
   --layout schematic|geographic
   --line-width <mm>    (default 6)
   --clearance <mm>     fit clearance (default 0.15)
-  --label-mode auto|print|tape   raised printed letters, or pockets for label-maker tape (auto: tape when < 4.5 mm)
+  --label-mode print|tape|auto   raised printed letters (default), pockets for label-maker tape, or auto (tape when < 3.6 mm)
   --tape-width <mm>    label-maker tape width for tape mode (default 12)
   --map-svg <file>     official/community schematic SVG: use its geometry instead of the algorithmic layout
   --font <file.ttf>    custom font (e.g. Noto Sans JP for CJK names)
@@ -81,12 +82,13 @@ const params: PartialParams = {
   heightMm: opts.height ? Number(opts.height) : undefined,
   farm,
   bed: bedArg ? { x: bedArg[0], y: bedArg[1] ?? bedArg[0] } : undefined,
-  labelMode: (opts['label-mode'] as any) ?? 'auto',
+  labelMode: (opts['label-mode'] as any) ?? 'print',
   tapeWidth: Number(opts['tape-width'] ?? 12),
   labels: (opts.labels as any) ?? 'all',
   labelFontSize: Number(opts['label-size'] ?? 5.5),
   labelLanguage: (opts.lang as any) ?? 'local',
   base: (opts.base as any) ?? 'tiles',
+  baseMargin: Number(opts['base-margin'] ?? 8),
   keyholes: !!opts.keyholes,
   lineWidth: Number(opts['line-width'] ?? 6),
   clearance: Number(opts.clearance ?? 0.15),

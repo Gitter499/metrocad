@@ -26,7 +26,7 @@ app.innerHTML = `
 </div>
 <div class="topright"><a class="pill" href="https://github.com/gitter499/metrocad" target="_blank" rel="noopener">GitHub</a></div>
 <div class="panel glass">
-  <input id="city" type="text" placeholder="City" value="Paris" autocomplete="off" />
+  <input id="city" type="text" placeholder="City" value="Philadelphia" autocomplete="off" />
   <div class="chips" id="chips"></div>
   <label class="field"><span>Official map</span><select id="officialMap" style="width:150px"><option value="auto">Auto (Commons schematic)</option><option value="none">Generated layout</option><option value="custom">My SVG file…</option></select></label>
   <input id="mapFile" type="file" accept=".svg,image/svg+xml" style="display:none">
@@ -41,7 +41,7 @@ app.innerHTML = `
     <label class="field"><span>P1S / X1</span><input id="nP1" type="number" value="1" min="0" max="20" style="width:64px"></label>
     <label class="field"><span>Ultimaker S3</span><input id="nS3" type="number" value="1" min="0" max="20" style="width:64px"></label>
     <label class="field"><span>Plates sized for</span><select id="plateBed" style="width:150px"><option value="min">Smallest bed (any printer)</option><option value="bambu-a1-mini">A1 mini 180²</option><option value="bambu-p1s">P1S 256²</option><option value="ultimaker-s3">S3 230×190</option></select></label>
-    <label class="field"><span>Base</span><select id="base" style="width:190px"><option value="tiles">Grooved snap-fit tiles</option><option value="none">No base, paper template</option></select></label>
+    <label class="field"><span>Base</span><select id="base" style="width:190px"><option value="tiles">Grooved snap-fit tiles</option><option value="outline">Outline tiles (least filament)</option><option value="none">No base, paper template</option></select></label>
   </div>
   <details>
     <summary>Style</summary>
@@ -96,7 +96,7 @@ const STAGES: Record<string, [number, number]> = { init: [0, 0.05], fetch: [0.05
 const stageFraction = (stage: string, f: number) => { const [a, b] = STAGES[stage] ?? [0, 1]; return a + (b - a) * f; };
 function setStatus(text: string, fraction?: number) { $('status').textContent = text; if (fraction !== undefined) $('bar').style.width = `${Math.round(fraction * 100)}%`; }
 
-const featured: [string, string][] = [['Paris', 'paris'], ['London', 'london'], ['New York', ''], ['Tokyo', ''], ['Berlin', ''], ['Madrid', ''], ['Seoul', ''], ['Mexico City', ''], ['Moscow', ''], ['Washington', '']];
+const featured: [string, string][] = [['Philadelphia', 'philadelphia'], ['Pittsburgh', 'pittsburgh'], ['London', 'london'], ['Paris', 'paris'], ['Tokyo', 'tokyo'], ['Moscow', 'moscow'], ['Vienna', 'vienna'], ['Atlanta', 'atlanta'], ['San Francisco', 'san-francisco'], ['New York', ''], ['Berlin', ''], ['Madrid', '']];
 $('chips').innerHTML = featured.map(([n, f]) => `<span class="chip" data-city="${n}" data-fixture="${f}">${n}</span>`).join('');
 $('chips').querySelectorAll<HTMLElement>('.chip').forEach((c) => c.addEventListener('click', () => { ($('city') as HTMLInputElement).value = c.dataset.city!; generate(c.dataset.fixture || undefined); }));
 let customSvg: string | undefined;

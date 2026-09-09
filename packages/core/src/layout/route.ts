@@ -130,6 +130,8 @@ export interface RouteOptions {
   cornerRadius: number;
   /** Global line ordering (index) used to order parallel lines consistently. */
   lineOrder: Map<string, number>;
+  /** Line colours: same-coloured lines sharing a corridor are drawn as one ribbon (a trunk shared by many services). */
+  lineColor?: Map<string, string>;
   arcSegments: number;
   /** Detour distance (mm) for duplicate corridors between the same stations. */
   detour: number;
@@ -229,7 +231,11 @@ export function buildCorridorGeometry(graph: StationGraph, opts: RouteOptions): 
     }
     // Offsets: order lines by global order; canonical direction is a->b, but offsets must be consistent
     // regardless of which end is "a": use the canonical orientation from the lexically smaller node id.
-    const lines = [...c.lines].sort((x, y) => (opts.lineOrder.get(x) ?? 0) - (opts.lineOrder.get(y) ?? 0));
+    const sortedLines = [...c.lines].sort((x, y) => (opts.lineOrder.get(x) ?? 0) - (opts.lineOrder.get(y) ?? 0));
+    // One ribbon per colour: the first line (in global order) of each colour carries the geometry.
+    const lines: string[] = [];
+    const seenColour = new Set<string>();
+    for (const id of sortedLines) { const col = opts.lineColor?.get(id) ?? id; if (seenColour.has(col)) continue; seenColour.add(col); lines.push(id); }
     const k = lines.length;
     const flip = c.a < c.b ? 1 : -1;
     const geoms = lines.map((lineId, i) => {

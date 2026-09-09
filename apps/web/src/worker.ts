@@ -5,13 +5,20 @@ import wasmUrl from 'manifold-3d/manifold.wasm?url';
 import fontUrl from '@metrocad/core/fonts/Inter-Bold.ttf?url';
 import parisUrl from '@metrocad/core/fixtures/paris.json?url';
 import londonUrl from '@metrocad/core/fixtures/london.json?url';
+import philadelphiaUrl from '@metrocad/core/fixtures/philadelphia.json?url';
+import pittsburghUrl from '@metrocad/core/fixtures/pittsburgh.json?url';
+import tokyoUrl from '@metrocad/core/fixtures/tokyo.json?url';
+import moscowUrl from '@metrocad/core/fixtures/moscow.json?url';
+import viennaUrl from '@metrocad/core/fixtures/vienna.json?url';
+import atlantaUrl from '@metrocad/core/fixtures/atlanta.json?url';
+import sanFranciscoUrl from '@metrocad/core/fixtures/san-francisco.json?url';
 import {
   fetchCityNetwork, buildFromNetwork, buildBundle, zipBundle, TextFont, renderSvg, partsToGlb, partsToUsdz,
   slugify, sliceAndSchedule, buildAssemblyPlan, renderAssemblyPlanSvg, knownMapFor, commonsFileUrl, type FullBuildResult, type MetroNetwork, type FarmResult, type Part,
 } from '@metrocad/core';
 import type { ToWorker, FromWorker, DisplayPart } from './protocol.js';
 
-const FIXTURES: Record<string, string> = { paris: parisUrl, london: londonUrl };
+const FIXTURES: Record<string, string> = { paris: parisUrl, london: londonUrl, philadelphia: philadelphiaUrl, pittsburgh: pittsburghUrl, tokyo: tokyoUrl, moscow: moscowUrl, vienna: viennaUrl, atlanta: atlantaUrl, 'san-francisco': sanFranciscoUrl };
 
 let manifold: ManifoldToplevel | undefined;
 let font: TextFont | undefined;

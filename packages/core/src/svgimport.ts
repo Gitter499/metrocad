@@ -5,7 +5,8 @@
  */
 import type { DesignParams, LayoutLabel, LayoutLine, LayoutStation, MetroNetwork, Vec2 } from './types.js';
 import type { LayoutResult } from './layout/index.js';
-import { roundedHull, markerRadiusMajor, dotRadius } from './layout/index.js';
+import { roundedHull, markerRadiusMajor, dotRadius, tapeFontSize } from './layout/index.js';
+import { placeLabels, type LabelCandidateInput, type Obstacles } from './layout/labels.js';
 import { normalizeName } from './network.js';
 import { filletPolyline, dedupe, splitForBed, paramOf, pointAt, pathLength, simplifyCollinear } from './layout/route.js';
 import type { TextFont } from './text.js';
@@ -428,27 +429,51 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
     return best;
   };
   const stationAnchor = new Map<string, Vec2>();
+  // Text-anchored stations claim tick marks: every tick belongs to at most one station, nearest pairs first, so a
+  // two-line label (e.g. "Chalfont &\nLatimer") can't steal the neighbouring station's tick and land on top of it.
+  const textTarget = new Map<string, Vec2>();
+  // A tick belongs next to its label: look only a few line-widths around the text anchor.
+  const tickTol = Math.max(12, params.lineWidth * 3);
+  const claims: { id: string; key: string; d: number; pt: Vec2 }[] = [];
+  const hits = new Map<string, ReturnType<typeof drawingPos>>();
   for (const st of net.stations) {
     const hit = drawingPos(st);
+    hits.set(st.id, hit);
     if (!hit) { unmatched.push(st.name); continue; }
     const p = toMm([hit.x, hit.y]);
-    let target = p;
-    if (hit.source === 'text') {
-      // nearest tick of one of the station's line colours
-      let bestTick: { pt: Vec2; d: number } | undefined;
-      for (const lid of st.lines) for (const tk of ticks.get(assigned.get(lid) ?? '') ?? []) {
-        const mid: Vec2 = [(tk[0][0] + tk[tk.length - 1][0]) / 2, (tk[0][1] + tk[tk.length - 1][1]) / 2];
-        const d = dist(mid, p);
-        if (d < snapTol && (!bestTick || d < bestTick.d)) {
-          const nl0 = nearestOnLines(tk[0], st.lines), nl1 = nearestOnLines(tk[tk.length - 1], st.lines);
-          bestTick = { pt: (nl0?.d ?? 1e9) < (nl1?.d ?? 1e9) ? tk[0] : tk[tk.length - 1], d };
-        }
-      }
-      if (bestTick) target = bestTick.pt;
+    if (hit.source !== 'text') { textTarget.set(st.id, p); continue; }
+    textTarget.set(st.id, p);
+    for (const lid of st.lines) for (const tk of ticks.get(assigned.get(lid) ?? '') ?? []) {
+      const mid: Vec2 = [(tk[0][0] + tk[tk.length - 1][0]) / 2, (tk[0][1] + tk[tk.length - 1][1]) / 2];
+      const d = dist(mid, p);
+      if (d >= tickTol) continue;
+      const nl0 = nearestOnLines(tk[0], st.lines), nl1 = nearestOnLines(tk[tk.length - 1], st.lines);
+      claims.push({ id: st.id, key: `${mid[0].toFixed(2)},${mid[1].toFixed(2)}`, d, pt: (nl0?.d ?? 1e9) < (nl1?.d ?? 1e9) ? tk[0] : tk[tk.length - 1] });
     }
+  }
+  claims.sort((a, b) => a.d - b.d);
+  const tickOwner = new Map<string, string>();
+  const claimed = new Map<string, Vec2>();
+  // Ticks sitting on a named marker belong to that marker's station.
+  for (const st of net.stations) {
+    const hit = hits.get(st.id); if (!hit || hit.source !== 'marker') continue;
+    const mp = toMm([hit.x, hit.y]);
+    for (const c of claims) if (!tickOwner.has(c.key) && dist(c.key.split(',').map(Number) as Vec2, mp) < params.lineWidth * 1.5) tickOwner.set(c.key, st.id);
+  }
+  for (const c of claims) { if (claimed.has(c.id) || tickOwner.has(c.key)) continue; tickOwner.set(c.key, c.id); claimed.set(c.id, c.pt); }
+  for (const st of net.stations) {
+    const p = textTarget.get(st.id); if (!p) continue;
+    const target = claimed.get(st.id) ?? p;
     const near = nearestOnLines(target, st.lines);
     if (!near || near.d > snapTol) { unmatched.push(st.name); continue; }
     stationAnchor.set(st.id, near.pt);
+    const dbgId = typeof process !== 'undefined' ? process.env?.SVG_DEBUG : undefined;
+    if (dbgId && st.id.includes(dbgId)) log(`[svg ${st.id}] source=${hits.get(st.id)?.source} text=${hits.get(st.id)?.t?.name ?? '—'} p=${p.map((v) => v.toFixed(1))} tick=${claimed.get(st.id)?.map((v) => v.toFixed(1)) ?? 'none'} claims=${claims.filter((c) => c.id === st.id).map((c) => `${c.key}:${c.d.toFixed(0)}${tickOwner.get(c.key) === st.id ? '*' : tickOwner.has(c.key) ? '(' + tickOwner.get(c.key) + ')' : ''}`).slice(0, 5).join(' ')} anchor=${near.pt.map((v) => v.toFixed(1))} d=${near.d.toFixed(1)}`);
+  }
+  // Two stations on one spot means a mis-snap; say so (the verification report picks this up).
+  {
+    const list = [...stationAnchor.entries()];
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) if (dist(list[i][1], list[j][1]) < params.lineWidth * 0.5) log(`SVG import: "${list[i][0]}" and "${list[j][0]}" landed on the same point`);
   }
   log(`SVG import: ${stationAnchor.size}/${net.stations.length} stations matched, ${new Set(assigned.values()).size} line colours`);
 
@@ -495,36 +520,57 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   }
   for (const st of stMap.values()) { if (!st.markerPoints.length) st.markerPoints = [[st.x, st.y]]; if (st.major) { st.x = st.markerPoints.reduce((a, p) => a + p[0], 0) / st.markerPoints.length; st.y = st.markerPoints.reduce((a, p) => a + p[1], 0) / st.markerPoints.length; } }
 
-  // 6. Labels exactly where the drawing puts them (scaled), sized with our font.
-  const labels: LayoutLabel[] = [];
-  let n = 0;
+  // 6. Labels where the drawing puts them (scaled), sized with our font — but never overlapping lines, markers or
+  //    each other: the drawing's pose is only the preferred candidate; collisions fall back to the usual placements
+  //    around the marker, then to a smaller size (≥ 4 mm), and finally the label is dropped rather than overlapped.
+  const obstacles: Obstacles = { segments: [], markers: [], bounds: { x: 0, y: 0, w: W, h: H } };
+  for (const ln of lines) for (const ch of ln.chains) for (let i = 1; i < ch.points.length; i++) obstacles.segments.push({ a: ch.points[i - 1], b: ch.points[i], r: params.lineWidth / 2 });
+  const markerPolys = new Map<string, Vec2[]>();
+  for (const st of stMap.values()) { const poly = roundedHull(st.markerPoints, st.markerRadius, 16); markerPolys.set(st.id, poly); obstacles.markers.push(poly); }
+  const inputs: LabelCandidateInput[] = [];
   if (params.labels !== 'none') for (const st of net.stations) {
     const ls = stMap.get(st.id); if (!ls) continue;
     if (params.labels === 'major' && !ls.major) continue;
     const hit = drawingPos(st);
-    if (!hit || !hit.t) continue;
-    const t = hit.t;
-    const text = params.labelLanguage === 'en' && st.nameEn ? st.nameEn : st.name;
-    // Follow the drawing's own text size (scaled to mm) but never above the requested size; tiny text becomes tape.
+    const t = hit?.t;
+    let text = params.labelLanguage === 'en' && st.nameEn ? st.nameEn : st.name;
+    if (!font.canRender(text) && st.nameEn && font.canRender(st.nameEn)) text = st.nameEn;
+    // Follow the drawing's own text size (scaled to mm) but never above the requested size.
     // Printed letters need ~4 mm to come out clean with a 0.4 mm nozzle; the drawing's size only shrinks them down to that.
-    const drawn = t.size * scale * 0.9;
+    const drawn = t ? t.size * scale * 0.9 : 0;
     const fontSize = Math.max(4.0, Math.min(params.labelFontSize, drawn > 0 ? drawn : params.labelFontSize));
     const tape = params.labelMode === 'tape' || (params.labelMode === 'auto' && fontSize < 3.6);
-    const box = font.measure(text, fontSize);
     const pad = 0.6;
-    const w = box.maxX - box.minX + 2 * pad, h = box.maxY - box.minY + 2 * pad;
-    const anchorPt = toMm([t.x, t.y]);
-    // baseline start relative to anchor mode
-    const ang = (t.angle * Math.PI) / 180;
-    const dx = t.anchor === 'middle' ? -w / 2 : t.anchor === 'end' ? -w : 0;
-    const dy = -(pad - box.minY); // baseline at the text's y
-    const origin: Vec2 = add(anchorPt, [dx * Math.cos(ang) - dy * Math.sin(ang), dx * Math.sin(ang) + dy * Math.cos(ang)]);
+    let box = font.measure(text, fontSize);
     if (tape) {
-      const tapeH = params.tapeWidth, tapeW = w + 3;
-      const o2: Vec2 = add(anchorPt, [dx * Math.cos(ang) - (-(tapeH / 2)) * Math.sin(ang), dx * Math.sin(ang) + (-(tapeH / 2)) * Math.cos(ang)]);
-      labels.push({ stationId: st.id, text, n: ++n, tape: true, x: o2[0], y: o2[1], width: tapeW, height: tapeH, angle: t.angle, fontSize, textOrigin: [2 - box.minX, (tapeH - (box.maxY - box.minY)) / 2 - box.minY] });
-    } else labels.push({ stationId: st.id, text, n: ++n, x: origin[0], y: origin[1], width: w, height: h, angle: t.angle, fontSize, textOrigin: [pad - box.minX, pad - box.minY] });
+      const tm = font.measure(text, tapeFontSize(params));
+      const wTape = tm.width + 4, hTape = params.tapeWidth;
+      box = { width: wTape, minX: 0, maxX: wTape, minY: -(hTape - tm.maxY + tm.minY) / 2 + tm.minY, maxY: 0 } as typeof box;
+      box.maxY = box.minY + hTape;
+    }
+    const w = box.maxX - box.minX + 2 * pad, h = box.maxY - box.minY + 2 * pad;
+    let preferred: { x: number; y: number; angle: number } | undefined;
+    if (t) {
+      const anchorPt = toMm([t.x, t.y]);
+      const ang = (t.angle * Math.PI) / 180;
+      const dx = t.anchor === 'middle' ? -w / 2 : t.anchor === 'end' ? -w : 0;
+      const dy = tape ? -(h / 2) : -(pad - box.minY); // baseline at the text's y (tape: centred on it)
+      const origin: Vec2 = add(anchorPt, [dx * Math.cos(ang) - dy * Math.sin(ang), dx * Math.sin(ang) + dy * Math.cos(ang)]);
+      preferred = { x: origin[0], y: origin[1], angle: t.angle };
+    }
+    const mb = bboxOf(markerPolys.get(st.id)!);
+    const minHalf = ls.major ? 0 : params.lineWidth / 2 + 0.3;
+    const smaller = tape ? [] : [0.85, 0.72].map((f) => Math.max(4, fontSize * f)).filter((fs, i, a) => fs < fontSize - 0.05 && a.indexOf(fs) === i).map((fs) => ({ fontSize: fs, box: font.measure(text, fs) }));
+    inputs.push({ stationId: st.id, text, center: [ls.x, ls.y], halfW: Math.max(mb.w / 2, minHalf), halfH: Math.max(mb.h / 2, minHalf), box, fontSize: tape ? tapeFontSize(params) : fontSize, priority: (t ? 4 : 0) + st.lines.length * 2 + (ls.major ? 1 : 0), preferred, smaller });
   }
+  const useTapeAll = params.labelMode === 'tape';
+  const { labels: placedRaw } = placeLabels(inputs, obstacles, { gap: 1.2, allowRotated: params.labelAllowRotated, force: false, debug: (id, why) => { if (process.env.LABEL_DEBUG && id.includes(process.env.LABEL_DEBUG)) log?.(`[label ${id}]\n  ` + why.join('\n  ')); } });
+  const labels: LayoutLabel[] = placedRaw.map(({ box, ...l }, i) => {
+    const tape = useTapeAll || (params.labelMode === 'auto' && l.fontSize < 3.6);
+    if (!tape) return { ...l, n: i + 1 };
+    const tm = font.measure(l.text, tapeFontSize(params));
+    return { ...l, n: i + 1, tape: true, textOrigin: [2 - tm.minX, (params.tapeWidth - (tm.maxY - tm.minY)) / 2 - tm.minY] };
+  });
   const layoutStations = [...stMap.values()];
   const report: SvgImportReport = { matchedStations: stMap.size, unmatchedStations: unmatched, lineColours: net.lines.map((l) => ({ ref: l.ref, svgColour: assigned.get(l.id), pieces: (linePaths.get(l.id) ?? []).length })) };
   const graph: any = { nodes: new Map(), corridors: [], incident: new Map() };

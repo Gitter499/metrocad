@@ -10,6 +10,7 @@ export const DEFAULT_PARAMS: DesignParams = {
 
   base: 'tiles',
   baseThickness: 4,
+  baseMargin: 8,
   grooveDepth: 1.2,
   pocketExtraDepth: 1.0,
   keyholes: false,

@@ -43,7 +43,8 @@ export function dotRadius(p: DesignParams): number {
 export function computeLayout(net: MetroNetwork, params: DesignParams, font: TextFont, log?: (m: string) => void): LayoutResult {
   const graph = buildStationGraph(net);
   const lo0 = params.layout;
-  const resolvedMode = lo0.mode === 'auto' ? (net.lines.length <= 6 ? 'schematic' : 'semi') : lo0.mode;
+  // Octilinear for networks with up to ~8 distinct colours (same-coloured services share ribbons); larger ones read better semi-geographic.
+  const resolvedMode = lo0.mode === 'auto' ? (new Set(net.lines.map((l) => l.color)).size <= 8 ? 'schematic' : 'semi') : lo0.mode;
   const lo = { ...lo0, mode: resolvedMode };
   params = { ...params, layout: lo };
   const semi = lo.mode === 'semi';
@@ -125,7 +126,7 @@ function buildAtScale(
   const semi = params.layout.mode === 'semi';
   const corridors = buildCorridorGeometry(g, {
     lineWidth: params.lineWidth, lineGap: params.lineGap, cornerRadius: params.cornerRadiusFactor * params.lineWidth,
-    lineOrder, arcSegments: params.quality === 'print' ? 10 : 5, detour: unitMm * 1.5,
+    lineOrder, lineColor: new Map(net.lines.map((l) => [l.id, l.color])), arcSegments: params.quality === 'print' ? 10 : 5, detour: unitMm * 1.5,
     style: semi ? 'smooth' : 'octilinear', angleStep: semi ? 30 : undefined, simplifyTol: semi ? Math.max(4, unitMm * 0.35) : undefined,
   });
 
@@ -220,22 +221,22 @@ function buildAtScale(
       const mb = bboxOf(markerPolys.get(st.id)!);
       // Regular dots sit on a line wider than the dot: anchor off the line edge, not the dot edge.
       const minHalf = st.major ? 0 : params.lineWidth / 2 + 0.3;
+      // Printed letters may shrink (never below 4 mm, the clean-print floor for a 0.4 mm nozzle) when the full size can't fit.
+      const smaller = tape ? [] : [0.85, 0.72].map((f) => Math.max(4, params.labelFontSize * f)).filter((fs, i, a) => fs < params.labelFontSize - 0.05 && a.indexOf(fs) === i).map((fs) => ({ fontSize: fs, box: font.measure(text, fs) }));
       inputs.push({
         stationId: st.id, text, center: [st.x, st.y], halfW: Math.max(mb.w / 2, minHalf), halfH: Math.max(mb.h / 2, minHalf), box, fontSize: tape ? tapeFont : params.labelFontSize,
-        priority: st.lines.length * 2 + (st.major ? 1 : 0),
+        priority: st.lines.length * 2 + (st.major ? 1 : 0), smaller,
       });
     }
   }
   const { labels: placedRaw, unlabeled } = placeLabels(inputs, obstacles, { gap: 1.2, allowRotated: params.labelAllowRotated, force: false });
-  const labels: LayoutLabel[] = placedRaw.map((l, n) => {
-    const inp = inputs.find((i) => i.stationId === l.stationId)!;
-    const pad = tape ? 0 : 0.6;
+  const labels: LayoutLabel[] = placedRaw.map(({ box: _box, ...l }, n) => {
     if (tape) {
       // centre the text vertically in the tape box
       const tm = font.measure(l.text, tapeFont);
       return { ...l, n: n + 1, tape: true, textOrigin: [2 - tm.minX, (params.tapeWidth - (tm.maxY - tm.minY)) / 2 - tm.minY] };
     }
-    return { ...l, n: n + 1, textOrigin: [pad - inp.box.minX, pad - inp.box.minY] };
+    return { ...l, n: n + 1 };
   });
   if (unlabeled.length) log?.(`${unlabeled.length} stations could not be labelled without collisions`);
 

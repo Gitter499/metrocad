@@ -36,7 +36,24 @@ export function zLevels(p: DesignParams): ZLevels {
   };
 }
 
-export interface TileGrid { cols: number; rows: number; w: number; h: number; ox: number; oy: number }
+export interface TileGrid { cols: number; rows: number; w: number; h: number; ox: number; oy: number; /** Outline base: tiles trimmed to the map footprint, empty cells dropped. */ outline?: boolean; /** Tiles actually produced (grid cells minus empty ones). */ count?: number }
+
+/** A point at least a few mm inside a cross-section, as close to `near` as the shape allows (for engraving IDs). */
+function innerPoint(cs: CrossSection, near: Vec2): Vec2 {
+  for (const k of [10, 7, 5, 3, 1.5]) {
+    const inner = cs.offset(-k, 'Round');
+    if (inner.area() > 1e-3) {
+      let best: Vec2 = near, bd = Infinity;
+      for (const poly of inner.toPolygons()) for (const p of poly) { const d = Math.hypot(p[0] - near[0], p[1] - near[1]); if (d < bd) { bd = d; best = [p[0], p[1]]; } }
+      // Nearest vertex of the eroded outline is ≥ k mm inside; pull it slightly further in towards `near`.
+      inner.delete();
+      const dx = near[0] - best[0], dy = near[1] - best[1], L = Math.hypot(dx, dy) || 1;
+      return [best[0] + (dx / L) * Math.min(k * 0.5, L), best[1] + (dy / L) * Math.min(k * 0.5, L)];
+    }
+    inner.delete();
+  }
+  return near;
+}
 
 export function tileGrid(layout: { width: number; height: number }, p: DesignParams): TileGrid {
   const usableX = p.bed.x - 2 * p.bedMargin, usableY = p.bed.y - 2 * p.bedMargin;
@@ -350,8 +367,8 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
   }
 
   /* ---------- base tiles ---------- */
-  const tiles = tileGrid(layout, params);
-  if (params.base === 'tiles') {
+  let tiles = tileGrid(layout, params);
+  if (params.base === 'tiles' || params.base === 'outline') {
     progress('geometry', 0.78, 'Base tiles');
     const grooveAll = CrossSection.union(chainCSs.map((c) => c.cs));
     const groove = grooveAll.offset(clr, 'Round'); grooveAll.delete();
@@ -361,10 +378,26 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     const tapePockets = tapePocketCS.length ? CrossSection.union(tapePocketCS) : undefined;
     const tapeDepth = 0.6;
     const H = z.baseTop + 5;
-    let ti = 0;
+    // Outline base: the tiles hug the map. Footprint = everything cut into the base, grown by baseMargin, with sharp
+    // inside corners softened; the tile grid covers only that footprint and each tile is trimmed to it. Saves most of
+    // the filament a rectangular base spends on empty corners and margins.
+    let foot: CrossSection | undefined;
+    if (params.base === 'outline') {
+      const all = CrossSection.union([groove, pockets, ...(labelPockets ? [labelPockets] : []), ...(tapePockets ? [tapePockets] : [])]);
+      const grown = all.offset(params.baseMargin + 4, 'Round'); all.delete();
+      foot = grown.offset(-4, 'Round'); grown.delete();
+      const fb = foot.bounds();
+      const g = tileGrid({ width: fb.max[0] - fb.min[0], height: fb.max[1] - fb.min[1] }, params);
+      tiles = { ...g, ox: fb.min[0], oy: fb.min[1], outline: true };
+    }
+    let ti = 0, made = 0;
     for (let r = 0; r < tiles.rows; r++) for (let c = 0; c < tiles.cols; c++) {
       const x0 = tiles.ox + c * tiles.w, y0 = tiles.oy + r * tiles.h;
-      const rect = CrossSection.square([tiles.w, tiles.h], false).translate([x0, y0]);
+      const rect0 = CrossSection.square([tiles.w, tiles.h], false).translate([x0, y0]);
+      let rect = rect0;
+      if (foot) { rect = rect0.intersect(foot); rect0.delete(); }
+      ti++;
+      if (rect.area() < 25) { rect.delete(); continue; } // an empty grid cell (outline base)
       let tile = rect.extrude(params.baseThickness);
       const cutWith = (cs: CrossSection, floor: number) => {
         const clip = cs.intersect(rect);
@@ -385,19 +418,27 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
           const head = CrossSection.circle(3.5).translate([kx, ky]);
           const slot = CrossSection.square([4, 12], false).translate([kx - 2, ky]);
           const kh = head.add(slot);
-          const cutter = kh.extrude(1.8 + 1).translate([0, 0, -1]);
-          const n = tile.subtract(cutter); tile.delete(); tile = n;
-          head.delete(); slot.delete(); kh.delete(); cutter.delete();
+          const inside = foot ? (() => { const t = kh.intersect(rect); const ok = Math.abs(t.area() - kh.area()) < 1e-3; t.delete(); return ok; })() : true;
+          if (inside) {
+            const cutter = kh.extrude(1.8 + 1).translate([0, 0, -1]);
+            const n = tile.subtract(cutter); tile.delete(); tile = n;
+            cutter.delete();
+          }
+          head.delete(); slot.delete(); kh.delete();
         }
       }
-      rect.delete();
       const tileTag = `R${r + 1}C${c + 1}`;
-      // ID + north arrow on the underside, centred.
-      tile = engrave(tile, `${tileTag} ^`, [x0 + tiles.w / 2, y0 + tiles.h / 2], 0, Math.min(14, tiles.w / 9), 0);
+      // ID + north arrow on the underside: centred, or (outline tiles) at a spot safely inside the trimmed shape.
+      const idAt: Vec2 = foot ? innerPoint(rect, [x0 + tiles.w / 2, y0 + tiles.h / 2]) : [x0 + tiles.w / 2, y0 + tiles.h / 2];
+      const idSize = foot ? Math.min(8, tiles.w / 12) : Math.min(14, tiles.w / 9);
+      rect.delete();
+      tile = engrave(tile, `${tileTag} ^`, idAt, 0, idSize, 0);
       pushPart(tile, { id: `tile-r${r + 1}c${c + 1}`, name: `Base tile row ${r + 1} col ${c + 1}`, kind: 'tile', color: params.colors.base, colorName: 'Base', tag: tileTag });
-      ti++;
+      made++;
       progress('geometry', 0.78 + 0.2 * (ti / (tiles.rows * tiles.cols)), `Tile ${ti}/${tiles.rows * tiles.cols}`);
     }
+    tiles.count = made;
+    foot?.delete();
     groove.delete(); pockets.delete(); labelPockets?.delete(); tapePockets?.delete();
   } else {
     // Floating mode: every part is glued straight to the wall, so all bottoms go to z=0.

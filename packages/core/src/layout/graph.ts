@@ -10,6 +10,8 @@ export interface GNode {
   /** Layout position (units). */
   pos: Vec2;
   lines: string[];
+  /** Distinct line colours here: the visual width of the node (same-coloured services share one ribbon). */
+  colours: number;
   neighbors: Set<string>;
   major: boolean;
 }
@@ -47,8 +49,9 @@ export function projectNetwork(net: MetroNetwork): Map<string, Vec2> {
 export function buildStationGraph(net: MetroNetwork): StationGraph {
   const geo = projectNetwork(net);
   const nodes = new Map<string, GNode>();
+  const colourOf = new Map(net.lines.map((l) => [l.id, l.color] as const));
   for (const st of net.stations) {
-    nodes.set(st.id, { id: st.id, name: st.name, nameEn: st.nameEn, geo: geo.get(st.id)!, pos: [...geo.get(st.id)!] as Vec2, lines: [...st.lines], neighbors: new Set(), major: false });
+    nodes.set(st.id, { id: st.id, name: st.name, nameEn: st.nameEn, geo: geo.get(st.id)!, pos: [...geo.get(st.id)!] as Vec2, lines: [...st.lines], colours: new Set(st.lines.map((id) => colourOf.get(id))).size, neighbors: new Set(), major: false });
   }
   for (const ln of net.lines) for (const seq of ln.sequences) {
     for (let i = 0; i + 1 < seq.length; i++) {
@@ -57,7 +60,9 @@ export function buildStationGraph(net: MetroNetwork): StationGraph {
       a.neighbors.add(b.id); b.neighbors.add(a.id);
     }
   }
-  for (const n of nodes.values()) n.major = n.lines.length > 1 || n.neighbors.size !== 2;
+  // Interchange = served by lines of more than one colour (SEPTA's 13 same-coloured Regional Rail lines through
+  // Elkins Park make one plain stop, as on the official map), or a branch point / terminus.
+  for (const n of nodes.values()) n.major = n.colours > 1 || n.neighbors.size !== 2;
   // A closed loop of regular stations (rare) has no major node: promote one so corridors terminate.
   for (const ln of net.lines) {
     const ids = new Set(ln.sequences.flat());

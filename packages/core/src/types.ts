@@ -30,6 +30,8 @@ export interface Line {
   operator?: string;
   /** Ordered station id sequences, one per route variant/direction. */
   sequences: string[][];
+  /** Refs merged into this line (B1/B2/B3 → B). */
+  members?: string[];
 }
 
 export interface MetroNetwork {
@@ -144,7 +146,8 @@ export interface FarmPrinter {
   speedFactor?: number;
 }
 
-export type BaseStyle = 'tiles' | 'none';
+/** tiles: rectangular grooved tiles covering the wall area · outline: tiles trimmed to the map's footprint (+ baseMargin), empty cells dropped — least filament · none: floating parts + paper template. */
+export type BaseStyle = 'tiles' | 'outline' | 'none';
 export type LabelPolicy = 'all' | 'major' | 'none';
 /** print: raised 3D-printed letters · tape: pockets sized for label-maker tape · auto: tape when the text is too small to print well. */
 export type LabelMode = 'print' | 'tape' | 'auto';
@@ -165,6 +168,8 @@ export interface DesignParams {
 
   base: BaseStyle;
   baseThickness: number;
+  /** Outline base: how far the base extends beyond lines, stations and labels (mm). */
+  baseMargin: number;
   grooveDepth: number;
   /** Extra depth of station pockets below the groove floor. */
   pocketExtraDepth: number;

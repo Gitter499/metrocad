@@ -38,7 +38,7 @@ export function applyFisheye(nodes: Iterable<GNode>, amount: number): void {
   const arr = [...nodes];
   if (!arr.length || amount <= 0) return;
   let cx = 0, cy = 0, w = 0;
-  for (const n of arr) { const k = n.lines.length + n.neighbors.size; cx += n.pos[0] * k; cy += n.pos[1] * k; w += k; }
+  for (const n of arr) { const k = n.colours + n.neighbors.size; cx += n.pos[0] * k; cy += n.pos[1] * k; w += k; }
   cx /= w; cy /= w;
   let R = 0;
   for (const n of arr) R = Math.max(R, dist(n.pos, [cx, cy]));
@@ -74,7 +74,7 @@ export function layoutReducedGraph(graph: StationGraph, opts: ForceOptions): voi
   const targetLen = (c: Corridor) => {
     const hops = c.interior.length + 1;
     const a = nodes.get(c.a)!, b = nodes.get(c.b)!;
-    const hub = 0.5 + 0.22 * Math.max(0, a.lines.length - 1) + 0.5 + 0.22 * Math.max(0, b.lines.length - 1);
+    const hub = 0.5 + 0.22 * Math.max(0, a.colours - 1) + 0.5 + 0.22 * Math.max(0, b.colours - 1);
     return Math.max(hub, Math.pow(hops, opts.lengthExponent));
   };
   applyFisheye(nodes.values(), opts.fisheye);
@@ -98,7 +98,7 @@ export function layoutReducedGraph(graph: StationGraph, opts: ForceOptions): voi
   const iters = Math.max(1, opts.iterations);
   const idx = new Map(majors.map((n, i) => [n.id, i]));
   const disp: Vec2[] = majors.map(() => [0, 0]);
-  const radius = majors.map((n) => 0.5 + 0.22 * Math.max(0, n.lines.length - 1));
+  const radius = majors.map((n) => 0.5 + 0.22 * Math.max(0, n.colours - 1));
   const edgeGap = 0.8;     // node-edge
 
   for (let it = 0; it < iters; it++) {
@@ -194,7 +194,7 @@ export function snapToGrid(graph: StationGraph, cell: number): void {
   const taken = new Set<string>();
   const key = (x: number, y: number) => `${x},${y}`;
   // Snap most-connected first so hubs keep their spots.
-  majors.sort((a, b) => (b.neighbors.size + b.lines.length) - (a.neighbors.size + a.lines.length));
+  majors.sort((a, b) => (b.neighbors.size + b.colours) - (a.neighbors.size + a.colours));
   for (const n of majors) {
     const gx = Math.round(n.pos[0] / cell), gy = Math.round(n.pos[1] / cell);
     let placed = false;
@@ -220,7 +220,7 @@ export function straighten(graph: StationGraph, cell: number, rounds = 4, length
   const occupied = new Map<string, string>();
   const key = (p: Vec2) => `${Math.round(p[0] / cell)},${Math.round(p[1] / cell)}`;
   for (const n of majors) occupied.set(key(n.pos), n.id);
-  const radiusOf = (n: GNode) => 0.5 + 0.22 * Math.max(0, n.lines.length - 1);
+  const radiusOf = (n: GNode) => 0.5 + 0.22 * Math.max(0, n.colours - 1);
   const targetLen = (c: Corridor) => {
     const a = nodes.get(c.a)!, b = nodes.get(c.b)!;
     return Math.max(radiusOf(a) + radiusOf(b), Math.pow(c.interior.length + 1, lengthExponent));
@@ -317,7 +317,7 @@ export function relaxMajors(graph: StationGraph, iterations: number): void {
   const k = 1 / (lens[Math.floor(lens.length / 2)] || 1);
   for (const n of nodes.values()) n.pos = [n.pos[0] * k, n.pos[1] * k];
   const anchor = new Map(majors.map((n) => [n.id, [...n.pos] as Vec2]));
-  const radius = majors.map((n) => 0.45 + 0.2 * Math.max(0, n.lines.length - 1));
+  const radius = majors.map((n) => 0.45 + 0.2 * Math.max(0, n.colours - 1));
   const iters = Math.max(40, Math.min(iterations, 300));
   for (let it = 0; it < iters; it++) {
     const disp: Vec2[] = majors.map(() => [0, 0]);

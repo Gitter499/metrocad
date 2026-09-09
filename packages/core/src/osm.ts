@@ -3,6 +3,7 @@
  * Works in Node (>=18) and browsers (both endpoints send CORS headers).
  */
 import type { Hex, Line, MetroNetwork, Station, TransitMode } from './types.js';
+import { applyOfficialOverlays } from './official/index.js';
 import { buildNetwork } from './network.js';
 
 export const USER_AGENT = 'MetroCAD/0.1 (https://github.com/gitter499/metrocad)';
@@ -33,6 +34,8 @@ export interface FetchOptions {
   overpassEndpoints?: string[];
   /** Transit modes to include, in priority order. Falls back to the next when a mode has no routes. */
   modes?: TransitMode[];
+  /** Tram stops: every stop, or (default) only termini, branch points and interchanges like the operators' maps. */
+  tramStops?: 'all' | 'major';
   /** Include all listed modes rather than only the first with results. */
   combineModes?: boolean;
   /** Max half-size of the query box in degrees around the city centre. */
@@ -139,7 +142,7 @@ const STOP_ROLE = /^(stop|stop_entry_only|stop_exit_only)$/;
 const PLATFORM_ROLE = /^(platform|platform_entry_only|platform_exit_only)$/;
 
 /** Parse a raw Overpass response into a MetroNetwork (stations merged, lines built). */
-export function parseOverpass(data: OverpassResponse, geo: GeocodeResult, query: string, modes: TransitMode[], endpoint?: string): MetroNetwork {
+export function parseOverpass(data: OverpassResponse, geo: GeocodeResult, query: string, modes: TransitMode[], endpoint?: string, opts: { tramStops?: 'all' | 'major'; log?: (m: string) => void } = {}): MetroNetwork {
   const nodes = new Map<number, OsmNode>();
   const routes: OsmRelation[] = [];
   const masters: OsmRelation[] = [];
@@ -154,10 +157,32 @@ export function parseOverpass(data: OverpassResponse, geo: GeocodeResult, query:
   const masterOf = new Map<number, OsmRelation>();
   for (const m of masters) for (const mem of m.members) if (mem.type === 'relation') masterOf.set(mem.ref, m);
 
+  // Mainline "train" routes cover everything from Amtrak to heritage excursions. Keep only the local commuter/regional
+  // network: routes whose network/operator matches the city's own subway/tram/light-rail operators (SEPTA Regional Rail
+  // next to SEPTA Metro), or that are tagged as commuter/regional/suburban service when there is no such operator.
+  const localNets = new Set<string>();
+  for (const pick of [['subway'], ['light_rail', 'tram']]) {
+    for (const r of routes) {
+      const t = r.tags ?? {};
+      if (t.route && pick.includes(t.route) && modes.includes(t.route as TransitMode)) for (const k of [t.network, t.operator]) if (k) for (const part of k.split(/;|,/)) localNets.add(part.trim().toLowerCase());
+    }
+    if (localNets.size) break; // the metro operator defines "local"; trams/light rail only when there is no metro
+  }
+  const isLocalTrain = (t: Record<string, string>): boolean => {
+    const keys = [t.network, t.operator].filter(Boolean).flatMap((k) => k!.split(/;|,/).map((x) => x.trim().toLowerCase()));
+    if (keys.some((k) => localNets.has(k) || [...localNets].some((n) => n.length > 3 && (k.includes(n) || n.includes(k))))) return true;
+    if (!localNets.size) return /^(commuter|regional|suburban|urban)$/.test(t.service ?? '') || /regional|commuter|s-bahn|rer|cercan[ií]as|suburbano/i.test(`${t.network ?? ''} ${t.name ?? ''}`);
+    return false;
+  };
+
   const rawRoutes: RawRoute[] = [];
   for (const r of routes) {
     const tags = r.tags ?? {};
     if (!modes.includes(tags.route as TransitMode)) continue;
+    if (tags.route === 'train' && !isLocalTrain(tags)) continue;
+    // Other operators' trams/light rail that happen to be in the box (NJ Transit's River Line next to SEPTA) are not
+    // part of this city's map either, once a metro operator defines what "local" means.
+    if (tags.route !== 'subway' && tags.route !== 'train' && localNets.size && tags.network && !isLocalTrain(tags)) continue;
     // Ordered stops: prefer explicit stop roles; fall back to platforms that are nodes; then any node with a name.
     let stops = r.members.filter((m) => m.type === 'node' && STOP_ROLE.test(m.role) && nodes.has(m.ref)).map((m) => m.ref);
     if (stops.length < 2) stops = r.members.filter((m) => m.type === 'node' && PLATFORM_ROLE.test(m.role) && nodes.has(m.ref)).map((m) => m.ref);
@@ -166,7 +191,14 @@ export function parseOverpass(data: OverpassResponse, geo: GeocodeResult, query:
     rawRoutes.push({ id: r.id, tags, stops, masterId: masterOf.get(r.id)?.id });
   }
 
-  const network = buildNetwork({ routes: rawRoutes, masters, nodes });
+  const network = buildNetwork({ routes: rawRoutes, masters, nodes, tramStops: opts.tramStops });
+  const netOut = finishNetwork(network, data, geo, query, modes, endpoint);
+  // Official-source overlays (e.g. SEPTA Regional Rail) replace OSM lines that are known to be incomplete.
+  applyOfficialOverlays(netOut, {}, opts.log);
+  return netOut;
+}
+
+function finishNetwork(network: { lines: Line[]; stations: Station[] }, data: OverpassResponse, geo: GeocodeResult, query: string, modes: TransitMode[], endpoint?: string): MetroNetwork {
   return {
     query,
     displayName: geo.displayName,
@@ -207,7 +239,7 @@ export async function fetchCityNetwork(city: string, opts: FetchOptions = {}): P
     for (const el of data.elements) if (el.type === 'relation' && el.tags?.type === 'route' && el.tags.route) available.add(el.tags.route);
     modes = [wanted.find((m) => available.has(m)) ?? wanted[0]];
   }
-  const net = parseOverpass(data, { ...geo, bbox }, city, modes, endpoint);
+  const net = parseOverpass(data, { ...geo, bbox }, city, modes, endpoint, { tramStops: opts.tramStops, log: opts.onStatus });
   if (!net.lines.length) throw new Error(`No ${wanted.join('/')} routes found around "${geo.displayName}". Try a different city name or include more transit modes.`);
   return net;
 }

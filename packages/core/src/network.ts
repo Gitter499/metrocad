@@ -54,7 +54,7 @@ const MERGE_RADIUS_M = 650;
 
 interface Cluster { key: string; name: string; nameEn?: string; lat: number; lon: number; ids: number[]; n: number }
 
-export function buildNetwork(input: BuildNetworkInput): { lines: Line[]; stations: Station[] } {
+export function buildNetwork(input: BuildNetworkInput & { tramStops?: 'all' | 'major' }): { lines: Line[]; stations: Station[] } {
   const { routes, masters, nodes } = input;
   const masterById = new Map(masters.map((m) => [m.id, m] as const));
 
@@ -88,9 +88,14 @@ export function buildNetwork(input: BuildNetworkInput): { lines: Line[]; station
   // 2. Group routes into lines by route_master.
   interface LineAcc { key: string; tags: Record<string, string>; routes: RawRoute[]; mode: TransitMode }
   const lineAcc = new Map<string, LineAcc>();
+  // Detour/special variants ("(diverted)", "(late nights)", "(morning rush local)") are not the line's shape.
+  const isVariant = (r: RawRoute) => /\((diverted|special|late nights?|.*rush.*|school|shuttle|short turn)\)|diverted/i.test(r.tags.name ?? '');
+  const hasRegular = new Map<string, boolean>();
+  for (const r of routes) { const k = r.masterId !== undefined ? `m${r.masterId}` : `r${r.id}`; if (!isVariant(r)) hasRegular.set(k, true); }
   for (const r of routes) {
     const master = r.masterId !== undefined ? masterById.get(r.masterId) : undefined;
     const key = master ? `m${master.id}` : `r${r.id}`;
+    if (isVariant(r) && hasRegular.get(key)) continue;
     let acc = lineAcc.get(key);
     if (!acc) {
       acc = { key, tags: { ...(r.tags), ...(master?.tags ?? {}) }, routes: [], mode: (r.tags.route as TransitMode) };
@@ -154,6 +159,11 @@ export function buildNetwork(input: BuildNetworkInput): { lines: Line[]; station
   //     so the map draws one track, not a shortcut loop (SEPTA Broad Street express, NYC express).
   for (const ln of lines) expandExpressVariants(ln, stations);
 
+  // 4a'. Surface tram stops every couple of blocks would swamp a wall map (SEPTA's T lines have ~50 stops each).
+  //     Like the operators' own maps, keep a tram-only stop only when it is a terminus, a branch point, or an
+  //     interchange; intermediate stops are dropped from the sequences.
+  if (input.tramStops !== 'all') thinTramStops(lines, stations);
+
   // 4b. Walking interchanges: stations of *different* lines within ~130 m under different names
   //     (SEPTA "City Hall" / "15th Street", PATCO "8th & Market" / "8th Street") become one station.
   mergeNearbyInterchanges(stations, lines, 220);
@@ -184,6 +194,12 @@ function refSortKey(ref: string): number {
   return m ? Number(m[1]) : 1e6;
 }
 
+/** "B1", "B2", "B3" → "B"; "T1"…"T5" → "T"; "7bis" stays "7bis"; "Blue" stays "Blue". */
+export function refFamily(ref: string): string {
+  const m = /^([A-Za-z]{1,3})\s?-?(\d{1,2})$/.exec(ref.trim());
+  return (m ? m[1] : ref.trim()).toLowerCase();
+}
+
 function mergeSimilarLines(lines: Line[]): Line[] {
   const out: Line[] = [];
   for (const ln of lines) {
@@ -195,13 +211,21 @@ function mergeSimilarLines(lines: Line[]): Line[] {
       let shared = 0;
       for (const id of set) if (os.has(id)) shared++;
       const smaller = Math.min(set.size, os.size);
-      // Different numeric refs with the same colour (Paris 6 / 7bis) must stay apart: require heavy overlap.
-      return shared >= Math.max(3, 0.35 * smaller);
+      // Same family (B1/B2 → B, T1…T5 → T, D1/D2 → D): merge on modest overlap. Different refs with the same colour
+      // (Paris 6 / 7bis, SEPTA's thirteen Regional Rail lines sharing one colour and the Center City trunk) stay apart
+      // unless one is almost entirely contained in the other (a short-turn or express variant).
+      const family = refFamily(o.ref) === refFamily(ln.ref);
+      return family ? shared >= 3 : shared >= Math.max(3, 0.9 * smaller);
     });
     if (target) {
       target.sequences.push(...ln.sequences);
-      // Keep the shortest sensible ref.
-      if (ln.ref.length < target.ref.length) { target.ref = ln.ref; }
+      // Keep the shortest sensible ref; a family merge (B1 + B2) takes the family letter (B).
+      if (refFamily(target.ref) === refFamily(ln.ref) && target.ref.toLowerCase() !== refFamily(target.ref)) {
+        const fam = target.ref.trim().replace(/\s?-?\d{1,2}$/, '');
+        target.members = [...new Set([...(target.members ?? [target.ref]), ln.ref])].sort();
+        target.ref = fam;
+        target.name = `${fam} (${target.members[0]}–${target.members[target.members.length - 1]})`;
+      } else if (ln.ref.length < target.ref.length) { target.ref = ln.ref; }
       if (!/:/.test(target.name) && /:/.test(ln.name)) target.name = ln.name.split(':')[0];
       else if (/:/.test(target.name)) target.name = target.name.split(':')[0];
     } else out.push({ ...ln, sequences: [...ln.sequences] });
@@ -210,7 +234,7 @@ function mergeSimilarLines(lines: Line[]): Line[] {
 }
 
 
-function mergeNearbyInterchanges(stations: Station[], lines: Line[], radiusM: number): void {
+export function mergeNearbyInterchanges(stations: Station[], lines: Line[], radiusM: number): void {
   const linesOf = new Map<string, Set<string>>();
   const neighbors = new Map<string, Set<string>>();
   for (const ln of lines) for (const seq of ln.sequences) for (let i = 0; i < seq.length; i++) {
@@ -318,4 +342,36 @@ function localPath(a: string, b: string, adj: Map<string, Set<string>>, pos: Map
     }
   }
   return undefined;
+}
+
+function thinTramStops(lines: Line[], stations: Station[]): void {
+  const byId = new Map(stations.map((s) => [s.id, s] as const));
+  const tramIds = new Set(lines.filter((l) => l.mode === 'tram').map((l) => l.id));
+  if (!tramIds.size) return;
+  // Station.lines is only filled in later; derive it from the sequences here.
+  const linesAt = new Map<string, Set<string>>();
+  for (const l of lines) for (const id of new Set(l.sequences.flat())) (linesAt.get(id) ?? linesAt.set(id, new Set()).get(id)!).add(l.id);
+  // undirected adjacency across the (merged) tram lines: > 2 distinct neighbours = branch point
+  const nb = new Map<string, Set<string>>();
+  for (const l of lines) if (tramIds.has(l.id)) for (const seq of l.sequences) for (let i = 0; i < seq.length; i++) {
+    const set = nb.get(seq[i]) ?? nb.set(seq[i], new Set()).get(seq[i])!;
+    if (i > 0) set.add(seq[i - 1]); if (i + 1 < seq.length) set.add(seq[i + 1]);
+  }
+  const termini = new Set<string>();
+  for (const l of lines) if (tramIds.has(l.id)) for (const seq of l.sequences) { termini.add(seq[0]); termini.add(seq[seq.length - 1]); }
+  const keep = (id: string): boolean => {
+    const st = byId.get(id); if (!st) return false;
+    const here = [...(linesAt.get(id) ?? [])];
+    if (here.some((lid) => !tramIds.has(lid))) return true; // shared with metro / rail
+    if (termini.has(id)) return true;
+    if ((nb.get(id)?.size ?? 0) > 2) return true; // branch point (Drexel Hill Junction on the D)
+    const tramLinesHere = here.filter((lid) => tramIds.has(lid));
+    if (tramLinesHere.length > 1) {
+      // interchange between different tram families (T1/T2 share a trunk: not an interchange)
+      const fams = new Set(tramLinesHere.map((lid) => refFamily(lines.find((l) => l.id === lid)!.ref)));
+      if (fams.size > 1) return true;
+    }
+    return false;
+  };
+  for (const l of lines) if (tramIds.has(l.id)) l.sequences = l.sequences.map((seq) => seq.filter(keep));
 }
