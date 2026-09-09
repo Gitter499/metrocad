@@ -168,7 +168,7 @@ export function placeLabels(inputs: LabelCandidateInput[], obstacles: Obstacles,
     // The label origin for text rendering: shift so glyph bbox min sits at (pad, pad) inside the box.
     labels.push({
       stationId: inp.stationId, text: inp.text,
-      x: cand.x, y: cand.y, width: W, height: H, angle: cand.angle, fontSize: inp.fontSize, textOrigin: [0, 0],
+      x: cand.x, y: cand.y, width: W, height: H, angle: cand.angle, fontSize: inp.fontSize, textOrigin: [0, 0], n: 0,
     });
   }
   return { labels, unlabeled };

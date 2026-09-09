@@ -9,6 +9,10 @@ import { renderSvg } from './svg.js';
 import { placementTransform, itemBBox } from './pack.js';
 import { slugify, zLevels } from './geometry.js';
 import type { Part } from './types.js';
+import type { FarmResult } from './farm.js';
+import { buildAssemblyPlan, renderAssemblyPlanSvg, tapeLabelsCsv } from './assembly.js';
+import { formatDuration } from './slicer/schedule.js';
+import { KNOWN_PRINTERS } from './defaults.js';
 
 export interface BundleOptions {
   /** Include one STL per part (many files). Default true. */
@@ -21,6 +25,8 @@ export interface BundleOptions {
   ar?: boolean;
   /** Base64 font data for the SVG preview. */
   fontDataUrl?: string;
+  /** Sliced G-code + farm schedule to include. */
+  sliced?: FarmResult;
   onProgress?: (fraction: number, detail: string) => void;
 }
 
@@ -75,8 +81,24 @@ export function buildBundle(r: FullBuildResult, opts: BundleOptions = {}): Bundl
   }
   files['map.svg'] = enc(renderSvg(r.layout, r.params, { fontDataUrl: opts.fontDataUrl, title: r.network.displayName }));
   files['template.svg'] = enc(renderSvg(r.layout, r.params, { fontDataUrl: opts.fontDataUrl, template: true, tiles: r.tiles, title: `${r.network.displayName} template` }));
+  // Assembly plan + IDs
+  const plan = buildAssemblyPlan(r);
+  files['assembly/plan.json'] = enc(JSON.stringify(plan));
+  files['assembly/assembly-plan.svg'] = enc(renderAssemblyPlanSvg(r, plan, { fontDataUrl: opts.fontDataUrl }));
+  for (const step of plan.steps) if (step.id.startsWith('line-')) files[`assembly/step-${slugify(step.title)}.svg`] = enc(renderAssemblyPlanSvg(r, plan, { fontDataUrl: opts.fontDataUrl, step: step.id }));
+  const csv = tapeLabelsCsv(r);
+  if (csv) files['labels-tape.csv'] = enc(csv);
+  // G-code + schedule
+  if (opts.sliced) {
+    opts.sliced.plates.forEach((sp, i) => {
+      const n = String(i + 1).padStart(2, '0');
+      const ext = sp.printerId.startsWith('ultimaker') ? '.gcode' : '.gcode';
+      files[`gcode/${slugify(sp.printerId)}/${n}-${slugify(sp.name)}${ext}`] = enc(sp.gcode);
+    });
+    files['gcode/schedule.json'] = enc(JSON.stringify({ makespanSec: opts.sliced.schedule.makespanSec, totalPrintSec: opts.sliced.totalSec, totalGrams: opts.sliced.totalGrams, changeoverSec: opts.sliced.changeoverSec, printers: opts.sliced.schedule.perPrinter, assignments: opts.sliced.schedule.assignments, plates: opts.sliced.plates.map((p) => ({ plate: p.plateId, name: p.name, printer: p.printerName, printerId: p.printerId, timeSec: p.timeSec, grams: p.stats.filamentGrams, layers: p.stats.layers })) }, null, 2));
+  }
   files['manifest.json'] = enc(JSON.stringify(manifest(r, plateFiles), null, 2));
-  files['README.md'] = enc(printGuide(r, plateFiles));
+  files['README.md'] = enc(printGuide(r, plateFiles, opts.sliced));
   progress(1, 'Done');
   return files;
 }
@@ -116,7 +138,7 @@ function manifest(r: FullBuildResult, plateFiles: { plate: typeof r.plates[numbe
   };
 }
 
-function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[number]; file: string }[]): string {
+function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[number]; file: string }[], sliced?: FarmResult): string {
   const p = r.params;
   const z = zLevels(p);
   const byColor = new Map<string, { name: string; grams: number; plates: number; parts: number }>();
@@ -146,6 +168,19 @@ function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[num
   lines.push('* `ar/metromap.glb`, `ar/metromap.usdz` — AR/3D preview models (open the .usdz on an iPhone/iPad, the .glb on Android).');
   lines.push('* `map.svg` — the map as a vector image. `template.svg` — a 1:1 alignment template (print at 100 %, tape to the wall).');
   lines.push('');
+  if (sliced) {
+    lines.push('## Print schedule');
+    lines.push('');
+    const farm = r.params.farm.map((f) => `${f.count} × ${KNOWN_PRINTERS[f.printerId]?.name ?? f.printerId}`).join(', ');
+    lines.push(`Farm: ${farm}. Total printing ${formatDuration(sliced.totalSec)} (${sliced.totalGrams.toFixed(0)} g sliced), **finishes in ${formatDuration(sliced.schedule.makespanSec)} wall-clock** with ${sliced.changeoverSec / 60} min between plates.`);
+    lines.push('');
+    lines.push('| Printer | Plates | Busy |');
+    lines.push('|---|---|---|');
+    for (const p of sliced.schedule.perPrinter) lines.push(`| ${p.printer} | ${p.jobs.map((j) => r.plates.findIndex((pl) => pl.id === j) + 1).join(', ')} | ${formatDuration(p.busySec)} |`);
+    lines.push('');
+    lines.push('G-code for each plate is in `gcode/<printer>/NN-name.gcode`, sliced for the printer it is scheduled on (0.2 mm layers, 2 walls, 8 % infill, PLA 215/60 °C).');
+    lines.push('');
+  }
   lines.push('## Print plates');
   lines.push('');
   lines.push('| # | Plate | Colour | Parts | Notes |');
@@ -174,6 +209,9 @@ function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[num
     lines.push('2. Press the line pieces into their grooves. Pieces are cut so that joints fall under station markers or at straight runs; every piece that crosses a tile seam locks the two tiles together.');
     lines.push('3. Drop the station dots into their holes, then the interchange rings and their white plugs.');
     lines.push('4. Seat each label plate in its pocket (the pocket outline matches the label shape).');
+    lines.push('');
+    lines.push('Every tile, line piece and label plate has its ID engraved on the underside; `assembly/assembly-plan.svg` shows where each ID goes, `assembly/step-line-*.svg` one line at a time, and the web app\'s **Assemble** mode walks through the steps with AR.');
+    if (r.layout.labels.some((l) => l.tape)) lines.push(`Labels are made with a ${r.params.tapeWidth} mm label maker: print the texts in \`labels-tape.csv\` and stick each into its pocket (IDs T001… on the plan).`);
     lines.push('5. Mount on the wall with double-sided foam tape or Command strips on the back of each tile' + (p.keyholes ? ', or use the keyhole slots on the back.' : '.'));
   } else {
     lines.push('1. Print `template.svg` at 100 % (poster print or tiled A4/Letter) and tape it to the wall.');

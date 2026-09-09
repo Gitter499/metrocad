@@ -67,6 +67,26 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
 
   const parts: Part[] = [];
   const lineById = new Map(layout.lines.map((l) => [l.id, l]));
+  const engraveDepth = 0.45;
+  /**
+   * Engrave a short ID into the underside of a manifold (mirrored so it reads correctly when the
+   * part is flipped over). `at` is the text centre in map coordinates, `angle` the reading direction.
+   */
+  const engrave = (man: Manifold, text: string, at: Vec2, angle: number, size: number, zBottom: number): Manifold => {
+    if (!params.engraveIds) return man;
+    const m = font.measure(text, size);
+    const polys = font.outlines(text, size, { flatness: 0.2 }).map((poly) => poly.map((p): Vec2 => {
+      // centre, mirror in x (viewed from below), rotate, translate
+      const lx = -(p[0] - (m.minX + m.maxX) / 2), ly = p[1] - (m.minY + m.maxY) / 2;
+      return add(at, rotate([lx, ly], angle));
+    }));
+    if (!polys.length) return man;
+    const cs = new CrossSection(polys, 'NonZero');
+    const cutter = cs.extrude(engraveDepth + 1).translate([0, 0, zBottom - 1]);
+    const out = man.subtract(cutter);
+    cs.delete(); cutter.delete(); man.delete();
+    return out.status() === 'NoError' ? out : man;
+  };
   const lineOrder = new Map(layout.lines.map((l, i) => [l.id, i]));
   const stationById = new Map(layout.stations.map((s) => [s.id, s]));
   const circle = (r: number, at: Vec2, segs?: number) => CrossSection.circle(r, segs).translate(at);
@@ -179,15 +199,29 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
   chainCSs.forEach((c, i) => {
     const ln = lineById.get(c.lineId)!;
     const idx = ln.chains.indexOf(c.chain);
-    pushPart(chainM[i], {
-      id: `line-${slugify(ln.ref)}-${idx + 1}`, name: `Line ${ln.ref} piece ${idx + 1}`, kind: 'line', color: ln.color, colorName: `Line ${ln.ref}`, lineId: ln.id,
+    const tag = `${ln.ref}-${String(idx + 1).padStart(2, '0')}`;
+    // Engrave on the underside along the longest straight run (away from station holes).
+    const pts = c.chain.points;
+    let best = 0, bi = 0;
+    for (let k = 0; k + 1 < pts.length; k++) { const d = dist(pts[k], pts[k + 1]); if (d > best) { best = d; bi = k; } }
+    let man = chainM[i];
+    if (best > tag.length * params.lineWidth * 0.45 + 6) {
+      const mid: Vec2 = [(pts[bi][0] + pts[bi + 1][0]) / 2, (pts[bi][1] + pts[bi + 1][1]) / 2];
+      const ang = angleOf(sub(pts[bi + 1], pts[bi]));
+      const size = Math.min(params.lineWidth * 0.62, 4.2);
+      man = engrave(man, tag, mid, -ang, size, z.grooveFloor);
+    }
+    pushPart(man, {
+      id: `line-${slugify(ln.ref)}-${idx + 1}`, name: `Line ${ln.ref} piece ${idx + 1}`, kind: 'line', color: ln.color, colorName: `Line ${ln.ref}`, lineId: ln.id, tag,
     });
   });
 
   /* ---------- station parts ---------- */
   progress('geometry', 0.45, 'Stations');
   const markerH = z.markerTop - z.pocketFloor;
+  let si = -1;
   for (const st of layout.stations) {
+    si++;
     const mk = markerCS.get(st.id)!;
     if (st.major) {
       const inner = mk.offset(-params.ringWidth, 'Round');
@@ -195,22 +229,33 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
       const plugCS = inner.offset(-clr, 'Round');
       const ringM = ring.extrude(markerH).translate([0, 0, z.pocketFloor]);
       const plugM = plugCS.extrude(markerH).translate([0, 0, z.pocketFloor]);
-      pushPart(ringM, { id: `ring-${st.id}`, name: `${st.name} ring`, kind: 'ring', color: params.colors.ring, colorName: 'Ring', stationId: st.id });
-      pushPart(plugM, { id: `plug-${st.id}`, name: `${st.name} plug`, kind: 'plug', color: params.colors.plug, colorName: 'Station', stationId: st.id });
+      pushPart(ringM, { id: `ring-${st.id}`, name: `${st.name} ring`, kind: 'ring', color: params.colors.ring, colorName: 'Ring', stationId: st.id, tag: `S${String(si + 1).padStart(3, '0')}` });
+      pushPart(plugM, { id: `plug-${st.id}`, name: `${st.name} plug`, kind: 'plug', color: params.colors.plug, colorName: 'Station', stationId: st.id, tag: `S${String(si + 1).padStart(3, '0')}` });
       inner.delete(); ring.delete(); plugCS.delete();
     } else {
       const dotM = mk.extrude(markerH).translate([0, 0, z.pocketFloor]);
-      pushPart(dotM, { id: `dot-${st.id}`, name: `${st.name} dot`, kind: 'dot', color: params.colors.dot, colorName: 'Station', stationId: st.id });
+      pushPart(dotM, { id: `dot-${st.id}`, name: `${st.name} dot`, kind: 'dot', color: params.colors.dot, colorName: 'Station', stationId: st.id, tag: `S${String(si + 1).padStart(3, '0')}` });
     }
   }
 
   /* ---------- labels ---------- */
   progress('geometry', 0.55, 'Labels');
   const labelPlateCS: CrossSection[] = [];
+  const tapePocketCS: CrossSection[] = [];
   const plateH = z.baseTop - z.labelPocketFloor;
   const textH = z.labelTextTop - z.baseTop;
   let li = 0;
   for (const lb of layout.labels) {
+    if (lb.tape) {
+      // Label-maker tape: a shallow rectangular pocket in the tile, nothing to print.
+      const t = (lb.angle * Math.PI) / 180;
+      let rect = CrossSection.square([lb.width, lb.height], false);
+      const r = rect.rotate(lb.angle); rect.delete();
+      const pocket = r.translate([lb.x, lb.y]); r.delete();
+      tapePocketCS.push(keep(pocket));
+      void t;
+      continue;
+    }
     const t = (lb.angle * Math.PI) / 180;
     const place = (p: Vec2): Vec2 => add([lb.x, lb.y], rotate(p, t));
     // plate: rounded rectangle
@@ -225,7 +270,11 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     const inset = plateP.offset(-0.25, 'Miter');
     const clipped = text.intersect(inset); text.delete(); inset.delete(); text = clipped;
     if (text.area() < 0.05) { text.delete(); plateP.delete(); warnings.push(`Label "${lb.text}" produced no glyph geometry`); continue; }
-    const plateM = plateP.extrude(plateH).translate([0, 0, z.labelPocketFloor]);
+    let plateM = plateP.extrude(plateH).translate([0, 0, z.labelPocketFloor]);
+    const tagText = `N${String(lb.n).padStart(3, '0')}`;
+    const t2 = (lb.angle * Math.PI) / 180;
+    const plateCentre = place([lb.width / 2, lb.height / 2]);
+    if (lb.width > 14) plateM = engrave(plateM, tagText, plateCentre, -t2, Math.min(lb.height * 0.55, 3.5), z.labelPocketFloor);
     const textM = text.extrude(textH).translate([0, 0, z.baseTop]);
     // Coarse copy of the letters for on-screen/AR use.
     const coarseCS = text.simplify(0.1);
@@ -234,8 +283,8 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     coarseCS.delete(); coarseM.delete();
     const st = stationById.get(lb.stationId);
     const gid = `label-${lb.stationId}`;
-    pushPart(plateM, { id: `${gid}-plate`, name: `${lb.text} label plate`, kind: 'labelPlate', color: params.colors.labelPlate, colorName: 'Label plate', group: gid, stationId: st?.id });
-    pushPart(textM, { id: `${gid}-text`, name: `${lb.text} label text`, kind: 'labelText', color: params.colors.labelText, colorName: 'Label text', group: gid, stationId: st?.id }, previewText);
+    pushPart(plateM, { id: `${gid}-plate`, name: `${lb.text} label plate`, kind: 'labelPlate', color: params.colors.labelPlate, colorName: 'Label plate', group: gid, stationId: st?.id, tag: tagText });
+    pushPart(textM, { id: `${gid}-text`, name: `${lb.text} label text`, kind: 'labelText', color: params.colors.labelText, colorName: 'Label text', group: gid, stationId: st?.id, tag: tagText }, previewText);
     labelPlateCS.push(keep(plateP));
     text.delete();
     li++;
@@ -251,6 +300,8 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     const pocketsAll = CrossSection.union([...markerCS.values()]);
     const pockets = pocketsAll.offset(clr, 'Round'); pocketsAll.delete();
     const labelPockets = labelPlateCS.length ? (() => { const u = CrossSection.union(labelPlateCS); const o = u.offset(clr, 'Round'); u.delete(); return o; })() : undefined;
+    const tapePockets = tapePocketCS.length ? CrossSection.union(tapePocketCS) : undefined;
+    const tapeDepth = 0.6;
     const H = z.baseTop + 5;
     let ti = 0;
     for (let r = 0; r < tiles.rows; r++) for (let c = 0; c < tiles.cols; c++) {
@@ -268,6 +319,7 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
       cutWith(groove, z.grooveFloor);
       cutWith(pockets, z.pocketFloor);
       if (labelPockets) cutWith(labelPockets, z.labelPocketFloor);
+      if (tapePockets) cutWith(tapePockets, z.baseTop - tapeDepth);
       if (params.keyholes) {
         // Two keyhole slots on the back: a 7 mm head + 4 mm slot, 1.8 mm deep, near the top edge.
         for (const kx of [x0 + tiles.w * 0.25, x0 + tiles.w * 0.75]) {
@@ -281,11 +333,14 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
         }
       }
       rect.delete();
-      pushPart(tile, { id: `tile-r${r + 1}c${c + 1}`, name: `Base tile row ${r + 1} col ${c + 1}`, kind: 'tile', color: params.colors.base, colorName: 'Base' });
+      const tileTag = `R${r + 1}C${c + 1}`;
+      // ID + north arrow on the underside, centred.
+      tile = engrave(tile, `${tileTag} ^`, [x0 + tiles.w / 2, y0 + tiles.h / 2], 0, Math.min(14, tiles.w / 9), 0);
+      pushPart(tile, { id: `tile-r${r + 1}c${c + 1}`, name: `Base tile row ${r + 1} col ${c + 1}`, kind: 'tile', color: params.colors.base, colorName: 'Base', tag: tileTag });
       ti++;
       progress('geometry', 0.78 + 0.2 * (ti / (tiles.rows * tiles.cols)), `Tile ${ti}/${tiles.rows * tiles.cols}`);
     }
-    groove.delete(); pockets.delete(); labelPockets?.delete();
+    groove.delete(); pockets.delete(); labelPockets?.delete(); tapePockets?.delete();
   } else {
     // Floating mode: every part is glued straight to the wall, so all bottoms go to z=0.
     for (const p of parts) shiftZ(p, -p.bbox.min[2]);

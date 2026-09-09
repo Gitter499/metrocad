@@ -150,6 +150,14 @@ export function buildNetwork(input: BuildNetworkInput): { lines: Line[]; station
   // 4. Merge lines that are really variants of one line: same colour + overlapping station sets.
   lines = mergeSimilarLines(lines);
 
+  // 4a. Express/skip-stop services: replace pairs that skip over local stations with the local path,
+  //     so the map draws one track, not a shortcut loop (SEPTA Broad Street express, NYC express).
+  for (const ln of lines) expandExpressVariants(ln, stations);
+
+  // 4b. Walking interchanges: stations of *different* lines within ~130 m under different names
+  //     (SEPTA "City Hall" / "15th Street", PATCO "8th & Market" / "8th Street") become one station.
+  mergeNearbyInterchanges(stations, lines, 220);
+
   // 5. Station.lines, dedupe, deterministic ordering.
   for (const st of stations) st.lines = [];
   for (const ln of lines) {
@@ -199,4 +207,115 @@ function mergeSimilarLines(lines: Line[]): Line[] {
     } else out.push({ ...ln, sequences: [...ln.sequences] });
   }
   return out;
+}
+
+
+function mergeNearbyInterchanges(stations: Station[], lines: Line[], radiusM: number): void {
+  const linesOf = new Map<string, Set<string>>();
+  const neighbors = new Map<string, Set<string>>();
+  for (const ln of lines) for (const seq of ln.sequences) for (let i = 0; i < seq.length; i++) {
+    const id = seq[i];
+    const set = linesOf.get(id) ?? new Set(); set.add(ln.id); linesOf.set(id, set);
+    const nb = neighbors.get(id) ?? new Set(); neighbors.set(id, nb);
+    if (i > 0) nb.add(seq[i - 1]);
+    if (i + 1 < seq.length) nb.add(seq[i + 1]);
+  }
+  const alive = new Map(stations.map((s) => [s.id, s]));
+  const redirect = new Map<string, string>();
+  const resolve = (id: string) => { let cur = id; while (redirect.has(cur)) cur = redirect.get(cur)!; return cur; };
+  // Candidate pairs, closest first (so Bank+Monument merges before Bank+Cannon Street).
+  const pairs: { a: Station; b: Station; d: number }[] = [];
+  for (let i = 0; i < stations.length; i++) for (let j = i + 1; j < stations.length; j++) {
+    const d = metersBetween(stations[i], stations[j]);
+    if (d <= radiusM) pairs.push({ a: stations[i], b: stations[j], d });
+  }
+  pairs.sort((x, y) => x.d - y.d);
+  for (const { a: a0, b: b0 } of pairs) {
+    const a = alive.get(resolve(a0.id)), b = alive.get(resolve(b0.id));
+    if (!a || !b || a === b) continue;
+    const la = linesOf.get(a.id) ?? new Set(), lb = linesOf.get(b.id) ?? new Set();
+    if (!la.size || !lb.size) continue;
+    let shared = false; for (const l of la) if (lb.has(l)) shared = true;
+    if (shared) continue;
+    // Parallel lines: if a neighbour of a or b is already served by lines of both, these are two
+    // distinct stations on parallel routes (Chemin Vert / Bréguet-Sabin), not an interchange.
+    let parallel = false;
+    for (const n of [...(neighbors.get(a.id) ?? []), ...(neighbors.get(b.id) ?? [])]) {
+      const ln = linesOf.get(resolve(n)); if (!ln) continue;
+      let hitA = false, hitB = false;
+      for (const l of ln) { if (la.has(l)) hitA = true; if (lb.has(l)) hitB = true; }
+      if (hitA && hitB) { parallel = true; break; }
+    }
+    if (parallel) continue;
+    a.lat = (a.lat + b.lat) / 2; a.lon = (a.lon + b.lon) / 2;
+    if (!a.name.includes(b.name) && !b.name.includes(a.name)) a.name = `${a.name} / ${b.name}`;
+    a.osmIds.push(...b.osmIds);
+    for (const l of lb) la.add(l);
+    linesOf.set(a.id, la);
+    const nb = neighbors.get(a.id) ?? new Set(); for (const n of neighbors.get(b.id) ?? []) nb.add(n); neighbors.set(a.id, nb);
+    alive.delete(b.id); redirect.set(b.id, a.id);
+  }
+  if (!redirect.size) return;
+  for (const ln of lines) ln.sequences = ln.sequences.map((seq) => seq.map(resolve).filter((id, k, arr) => k === 0 || arr[k - 1] !== id));
+  for (let k = stations.length - 1; k >= 0; k--) if (!alive.has(stations[k].id)) stations.splice(k, 1);
+}
+
+
+function expandExpressVariants(line: Line, stations: Station[]): void {
+  const pos = new Map(stations.map((s) => [s.id, s]));
+  for (let pass = 0; pass < 4; pass++) {
+    // adjacency from all current sequences
+    const adj = new Map<string, Set<string>>();
+    const link = (a: string, b: string) => { (adj.get(a) ?? adj.set(a, new Set()).get(a)!).add(b); (adj.get(b) ?? adj.set(b, new Set()).get(b)!).add(a); };
+    for (const seq of line.sequences) for (let i = 0; i + 1 < seq.length; i++) link(seq[i], seq[i + 1]);
+    let changed = false;
+    line.sequences = line.sequences.map((seq) => {
+      const out: string[] = [seq[0]];
+      for (let i = 0; i + 1 < seq.length; i++) {
+        const a = seq[i], b = seq[i + 1];
+        const path = localPath(a, b, adj, pos);
+        if (path) { changed = true; out.push(...path.slice(1)); } else out.push(b);
+      }
+      return out;
+    });
+    if (!changed) break;
+  }
+}
+
+/** Shortest path a->b (2..8 hops) avoiding the direct edge, with every intermediate close to the a-b segment. */
+function localPath(a: string, b: string, adj: Map<string, Set<string>>, pos: Map<string, Station>): string[] | undefined {
+  const A = pos.get(a), B = pos.get(b);
+  if (!A || !B) return undefined;
+  const L = metersBetween(A, B);
+  if (L < 50) return undefined;
+  const tol = Math.max(0.3 * L, 350);
+  const near = (id: string) => {
+    const P = pos.get(id); if (!P) return false;
+    // distance from P to segment AB in metres
+    const kx = 111320 * Math.cos((A.lat * Math.PI) / 180), ky = 110574;
+    const ax = 0, ay = 0, bx = (B.lon - A.lon) * kx, by = (B.lat - A.lat) * ky, px = (P.lon - A.lon) * kx, py = (P.lat - A.lat) * ky;
+    const l2 = bx * bx + by * by; const t = Math.max(0, Math.min(1, ((px - ax) * bx + (py - ay) * by) / l2));
+    const d = Math.hypot(px - (ax + t * bx), py - (ay + t * by));
+    return d < tol && t > 0.02 && t < 0.98;
+  };
+  const prev = new Map<string, string>(); prev.set(a, '');
+  const queue = [a];
+  const depth = new Map<string, number>([[a, 0]]);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    const d = depth.get(cur)!;
+    if (d >= 8) continue;
+    for (const nb of adj.get(cur) ?? []) {
+      if (prev.has(nb)) continue;
+      if (cur === a && nb === b) continue; // the direct (express) edge
+      if (nb !== b && !near(nb)) continue;
+      prev.set(nb, cur); depth.set(nb, d + 1);
+      if (nb === b) {
+        const path = [b]; let x = b; while (prev.get(x)) { x = prev.get(x)!; path.push(x); }
+        return path.reverse().length >= 3 ? path.reverse().reverse() : undefined;
+      }
+      queue.push(nb);
+    }
+  }
+  return undefined;
 }

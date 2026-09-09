@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import Module from 'manifold-3d';
-import { fetchCityNetwork, buildFromNetwork, buildBundle, TextFont, type MetroNetwork, type TransitMode, type PartialParams } from '@metrocad/core';
+import { fetchCityNetwork, buildFromNetwork, buildBundle, TextFont, parseFarm, sliceAndSchedule, type MetroNetwork, type TransitMode, type PartialParams } from '@metrocad/core';
 
 const require = createRequire(import.meta.url);
 
@@ -16,7 +16,10 @@ usage: metrocad <city> [options]
   --out <dir>          output directory (default: ./out/<city>)
   --width <mm>         finished width (default 900)
   --height <mm>        finished height (default: from map aspect)
-  --bed <x>x<y>        printer bed size in mm (default 180x180, Bambu A1 mini)
+  --farm <spec>        printers you have, e.g. bambu-a1-mini:3,bambu-p1s:1,ultimaker-s3:2
+                       (plates fit the smallest bed; the guide schedules across all of them)
+  --bed <x>x<y>        override the plate bed size in mm (default: smallest bed in the farm)
+  --slice              also write G-code for every plate (per assigned printer) + print schedule
   --modes <list>       transit modes to try, in order (default subway,light_rail,tram)
   --all-modes          include every listed mode instead of the first with results
   --labels all|major|none
@@ -27,6 +30,8 @@ usage: metrocad <city> [options]
   --layout schematic|geographic
   --line-width <mm>    (default 6)
   --clearance <mm>     fit clearance (default 0.15)
+  --label-mode auto|print|tape   raised printed letters, or pockets for label-maker tape (auto: tape when < 4.5 mm)
+  --tape-width <mm>    label-maker tape width for tape mode (default 12)
   --font <file.ttf>    custom font (e.g. Noto Sans JP for CJK names)
   --fixture <name>     use a bundled network fixture instead of fetching (paris, london)
   --network <file>     use a saved network JSON
@@ -68,11 +73,15 @@ else {
 }
 console.error(`${net.displayName}: ${net.lines.length} lines, ${net.stations.length} stations`);
 
-const bed = ((opts.bed as string) ?? '180x180').split('x').map(Number);
+const farm = parseFarm((opts.farm as string) ?? 'bambu-a1-mini:3');
+const bedArg = opts.bed ? (opts.bed as string).split('x').map(Number) : undefined;
 const params: PartialParams = {
   widthMm: Number(opts.width ?? 900),
   heightMm: opts.height ? Number(opts.height) : undefined,
-  bed: { x: bed[0], y: bed[1] ?? bed[0] },
+  farm,
+  bed: bedArg ? { x: bedArg[0], y: bedArg[1] ?? bedArg[0] } : undefined,
+  labelMode: (opts['label-mode'] as any) ?? 'auto',
+  tapeWidth: Number(opts['tape-width'] ?? 12),
   labels: (opts.labels as any) ?? 'all',
   labelFontSize: Number(opts['label-size'] ?? 5.5),
   labelLanguage: (opts.lang as any) ?? 'local',
@@ -97,7 +106,13 @@ const result = buildFromNetwork(net, {
 process.stderr.write('\n');
 const out = (opts.out as string) ?? path.join('out', city.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
 fs.mkdirSync(out, { recursive: true });
+let sliced: ReturnType<typeof sliceAndSchedule> | undefined;
+if (opts.slice) {
+  sliced = sliceAndSchedule(result, wasm, { onProgress: (f, d) => process.stderr.write(`\rslice     ${(f * 100).toFixed(0).padStart(3)}%  ${d.padEnd(40)}`) });
+  process.stderr.write('\n');
+}
 const files = buildBundle(result, {
+  sliced,
   individualStls: !opts['no-parts'], ar: !opts['no-ar'],
   fontDataUrl: 'data:font/ttf;base64,' + fs.readFileSync(fontPath).toString('base64'),
   onProgress: (f, d) => process.stderr.write(`\rexport    ${(f * 100).toFixed(0).padStart(3)}%  ${d.padEnd(40)}`),
@@ -118,6 +133,7 @@ const s = result.stats;
 console.log(`\n${net.displayName}`);
 console.log(`  ${result.layout.width.toFixed(0)} × ${result.layout.height.toFixed(0)} mm, ${s.lines} lines, ${s.stations} stations, ${s.labels} labels (${s.unlabeled} skipped)`);
 console.log(`  ${s.parts} parts on ${s.plates} plates, ≈ ${Math.round(s.estimatedGrams)} g filament, ${(s.buildMs / 1000).toFixed(1)} s`);
+if (sliced) console.log(`  sliced: ${(sliced.totalSec / 3600).toFixed(1)} h of printing, ${sliced.totalGrams.toFixed(0)} g · farm of ${sliced.schedule.perPrinter.length} printers finishes in ${(sliced.schedule.makespanSec / 3600).toFixed(1)} h`);
 console.log(`  ${Object.keys(files).length} files (${(bytes / 1e6).toFixed(1)} MB) written to ${out}`);
 for (const w of result.warnings) console.log(`  ! ${w}`);
 void here;

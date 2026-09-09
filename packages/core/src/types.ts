@@ -102,6 +102,10 @@ export interface LayoutChain {
 export interface LayoutLabel {
   stationId: string;
   text: string;
+  /** Sequential label number (1-based) used for IDs. */
+  n: number;
+  /** true when this label is a tape pocket rather than printed letters. */
+  tape?: boolean;
   /** Lower-left corner of the label box in mm (before rotation). */
   x: number;
   y: number;
@@ -129,16 +133,30 @@ export interface MapLayout {
 
 /* ----------------------------- Design ----------------------------- */
 
+export interface FarmPrinter {
+  /** Slicer profile id, e.g. 'bambu-a1-mini', 'bambu-p1s', 'ultimaker-s3'. */
+  printerId: string;
+  count: number;
+  /** Bed size of this printer (mm). */
+  bed: { x: number; y: number };
+  /** Relative print-time factor vs. the sliced estimate (1 = as sliced). */
+  speedFactor?: number;
+}
+
 export type BaseStyle = 'tiles' | 'none';
 export type LabelPolicy = 'all' | 'major' | 'none';
+/** print: raised 3D-printed letters · tape: pockets sized for label-maker tape · auto: tape when the text is too small to print well. */
+export type LabelMode = 'print' | 'tape' | 'auto';
 
 export interface DesignParams {
   /** Target wall-art width. */
   widthMm: number;
   /** Optional height; derived from the map aspect ratio when omitted. */
   heightMm?: number;
-  /** Printer bed (usable) size. */
+  /** Printer bed (usable) size used for plates and tiles (the smallest bed in the farm unless overridden). */
   bed: { x: number; y: number };
+  /** Print farm: printers available in parallel. Plates are packed to fit every printer in the farm. */
+  farm: FarmPrinter[];
   /** Empty margin kept around parts on a plate. */
   bedMargin: number;
   /** Radial clearance between mating parts. */
@@ -173,6 +191,11 @@ export interface DesignParams {
   /** Prefer English names when available. */
   labelLanguage: 'local' | 'en';
   labelAllowRotated: boolean;
+  labelMode: LabelMode;
+  /** Label-maker tape width (mm) used in tape mode: 6, 9, 12, 18, 24. */
+  tapeWidth: number;
+  /** Engrave piece IDs on the underside of tiles, line pieces and label plates. */
+  engraveIds: boolean;
 
   colors: {
     base: Hex;
@@ -220,6 +243,8 @@ export interface Part {
   stationId?: string;
   /** z offset to lay the part flat on the plate (part bottom -> 0). */
   printZ: number;
+  /** Short human ID engraved on the part and used in the assembly plan (e.g. "1-03", "R2C1", "N017"). */
+  tag?: string;
 }
 
 export interface PlateItem {

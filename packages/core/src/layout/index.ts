@@ -60,6 +60,10 @@ export function computeLayout(net: MetroNetwork, params: DesignParams, font: Tex
   const W = params.widthMm;
   // Fill the requested width (and height when given); the wall size dictates the scale.
   let unitMm = (W - 2 * margin) / Math.max(unitBox.w, 1e-6);
+  // Tall, narrow networks: cap the automatic height at 1.4 × width and never spread stations absurdly far.
+  const maxAutoH = W * 1.4;
+  if (!params.heightMm && unitBox.h * unitMm + 2 * margin > maxAutoH) unitMm = (maxAutoH - 2 * margin) / Math.max(unitBox.h, 1e-6);
+  unitMm = Math.min(unitMm, desiredUnitMm * 3);
   let H = params.heightMm ?? (unitBox.h * unitMm + 2 * margin);
   if (params.heightMm) unitMm = Math.min(unitMm, (H - 2 * margin) / Math.max(unitBox.h, 1e-6));
   if (unitMm < desiredUnitMm) log?.(`Station spacing ${unitMm.toFixed(1)}mm is below the comfortable ${desiredUnitMm.toFixed(1)}mm for this label size; consider a wider map or smaller labels`);
@@ -80,6 +84,19 @@ export function computeLayout(net: MetroNetwork, params: DesignParams, font: Tex
     log?.(`Layout overflowed by ${(overflow * 100 - 100).toFixed(1)}%, shrinking (pass ${pass + 1})`);
   }
   return result!;
+}
+
+/** Tape labels are used when asked for, or in auto mode when printed letters would be too small for a 0.4 mm nozzle. */
+export function useTape(params: DesignParams): boolean {
+  if (params.labels === 'none') return false;
+  if (params.labelMode === 'tape') return true;
+  if (params.labelMode === 'print') return false;
+  return params.labelFontSize < 4.5;
+}
+
+/** Text size (em, mm) a label maker prints on a given tape width (roughly 60 % of the tape). */
+export function tapeFontSize(params: DesignParams): number {
+  return Math.max(3, params.tapeWidth * 0.55);
 }
 
 function labelText(s: { name: string; nameEn?: string }, params: DesignParams): string {
@@ -172,27 +189,41 @@ function buildAtScale(
     obstacles.markers.push(poly);
   }
   const inputs: LabelCandidateInput[] = [];
+  const tape = useTape(params);
+  const tapeFont = tapeFontSize(params);
   if (params.labels !== 'none') {
     for (const st of stations.values()) {
       if (params.labels === 'major' && !st.major) continue;
       const netSt = net.stations.find((s) => s.id === st.id)!;
       let text = labelText(netSt, params);
       if (!font.canRender(text) && netSt.nameEn && font.canRender(netSt.nameEn)) text = netSt.nameEn;
-      const box = font.measure(text, params.labelFontSize);
+      let box = font.measure(text, params.labelFontSize);
+      if (tape) {
+        // Tape label: box = tape width high, text length + end margins wide (label makers add ~2 mm each side).
+        const tm = font.measure(text, tapeFont);
+        const wTape = tm.width + 4, hTape = params.tapeWidth;
+        box = { width: wTape, minX: 0, maxX: wTape, minY: -(hTape - tm.maxY + tm.minY) / 2 + tm.minY, maxY: 0 };
+        box.maxY = box.minY + hTape;
+      }
       const mb = bboxOf(markerPolys.get(st.id)!);
       // Regular dots sit on a line wider than the dot: anchor off the line edge, not the dot edge.
       const minHalf = st.major ? 0 : params.lineWidth / 2 + 0.3;
       inputs.push({
-        stationId: st.id, text, center: [st.x, st.y], halfW: Math.max(mb.w / 2, minHalf), halfH: Math.max(mb.h / 2, minHalf), box, fontSize: params.labelFontSize,
+        stationId: st.id, text, center: [st.x, st.y], halfW: Math.max(mb.w / 2, minHalf), halfH: Math.max(mb.h / 2, minHalf), box, fontSize: tape ? tapeFont : params.labelFontSize,
         priority: st.lines.length * 2 + (st.major ? 1 : 0),
       });
     }
   }
   const { labels: placedRaw, unlabeled } = placeLabels(inputs, obstacles, { gap: 1.2, allowRotated: params.labelAllowRotated, force: false });
-  const labels: LayoutLabel[] = placedRaw.map((l) => {
+  const labels: LayoutLabel[] = placedRaw.map((l, n) => {
     const inp = inputs.find((i) => i.stationId === l.stationId)!;
-    const pad = 0.6;
-    return { ...l, textOrigin: [pad - inp.box.minX, pad - inp.box.minY] };
+    const pad = tape ? 0 : 0.6;
+    if (tape) {
+      // centre the text vertically in the tape box
+      const tm = font.measure(l.text, tapeFont);
+      return { ...l, n: n + 1, tape: true, textOrigin: [2 - tm.minX, (params.tapeWidth - (tm.maxY - tm.minY)) / 2 - tm.minY] };
+    }
+    return { ...l, n: n + 1, textOrigin: [pad - inp.box.minX, pad - inp.box.minY] };
   });
   if (unlabeled.length) log?.(`${unlabeled.length} stations could not be labelled without collisions`);
 
