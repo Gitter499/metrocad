@@ -74,7 +74,7 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | 11 | 19 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_11_-_2024.svg) | ⚠️ station count 19 vs Wikidata 25 (may include planned stations) |
 | 12 | 31 |  | 31 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_12_-_2012-12-18.svg) | ✅  |
 | 13 | 32 |  | 33 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_13_-_2021-11-30.svg) | ⚠️ station count 32 vs Wikidata 33 |
-| 14 | 21 |  | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Carte_M%C3%A9tro_Paris_Ligne_14_(2024-06).svg) | ⚠️ station count 21 vs Wikidata 24 (may include planned stations) |
+| 14 | 21 |  | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_14_(2024-06).svg) | ⚠️ station count 21 vs Wikidata 24 (may include planned stations) |
 
 ### SEPTA — Wikidata [Q7451006](https://www.wikidata.org/wiki/Q7451006)
 
@@ -83,16 +83,16 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
 | B | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
-| D | 5 |  |  |  |  |  | ➖ no matching line item on Wikidata |
-| G | 7 | 64 |  | ✗ | ✓ |  | ❌ station count 7 vs Wikipedia 64; termini: OSM [Girard Avenue & 63rd Street, Frankford Avenue & Delaware Avenue] vs Wikidata [63rd and Girard, Richmond-Westmoreland Streets Loop] |
+| D | 50 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| G | 51 | 64 |  | ✗ | ✓ |  | ❌ station count 51 vs Wikipedia 64; termini: OSM [Girard Avenue & 63rd Street, Frankford Avenue & Delaware Avenue] vs Wikidata [63rd and Girard, Richmond-Westmoreland Streets Loop] |
 | L | 28 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | M | 22 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | PATCO | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:PATCO-Map.png) | ⚠️ termini: OSM [15th-16th & Locust, Lindenwold] vs Wikidata [Lindenwold, 15–16th & Locust] |
-| T | 41 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| T | 190 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | AIR | 10 |  |  | ✗ | ✓ |  | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Temple University, Airport Terminals E & F] vs Wikidata [High Wycombe railway station, Claremont railway station] |
 | CHE | 14 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #98783b |
 | CHW | 14 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #00bbb3 |
-| CYN | 6 | 5 |  | ✗ | ✓ |  | ⚠️ station count 6 vs Wikipedia 5; termini: OSM [Cynwyd, Jefferson / 11th Street / Jefferson Station] vs Wikidata [Cynwyd, Suburban Station] |
+| CYN | 6 | 5 |  | ✗ | ✓ |  | ⚠️ station count 6 vs Wikipedia 5; termini: OSM [Cynwyd, Jefferson] vs Wikidata [Cynwyd, Suburban Station] |
 | FOX | 10 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #ff8942 |
 | LAN | 26 | 27 |  | ✓ | ✓ |  | ⚠️ station count 26 vs Wikipedia 27 |
 | MED | 20 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #0081c5 |
@@ -102,6 +102,10 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | WAR | 16 |  |  | ✗ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Warminster, 30th Street] vs Wikidata [Warminster, Penn Medicine station]; colour #4c748c vs #ffd457 |
 | WTR | 22 |  |  | ✗ | ✓ |  | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [West Trenton, 30th Street] vs Wikidata [West Trenton station, Penn Medicine station] |
 | WIL | 22 | 22 |  | ✓ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Wilmington_Newark_Line_2015.png) | ⚠️ colour #4c748c vs #8ed16a |
+
+### philadelphia.official
+
+verification error: Cannot read properties of undefined (reading '0')
 
 ### Pittsburgh Regional Transit — Wikidata [Q7199143](https://www.wikidata.org/wiki/Q7199143)
 
