@@ -27,4 +27,7 @@ jobs:
           git config user.name "metrocad-verify[bot]"
           git config user.email "verify@metrocad.local"
           git add docs/verification.md
-          git diff --cached --quiet || git commit -m "docs: refresh Wikidata verification report" && git push
+          git diff --cached --quiet && exit 0
+          git commit -m "docs: refresh Wikidata verification report"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
