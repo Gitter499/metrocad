@@ -1,0 +1,34 @@
+{
+  "city": "london",
+  "place": "London",
+  "width": 600,
+  "lineWidth": 4.8,
+  "labelFontSize": 4.5,
+  "height": 329,
+  "lines": 11,
+  "stations": 267,
+  "labels": 187,
+  "parts": 957,
+  "byKind": {
+    "line": 199,
+    "ring": 109,
+    "plug": 109,
+    "dot": 158,
+    "labelPlate": 187,
+    "labelText": 187,
+    "tile": 8
+  },
+  "plates": 24,
+  "tiles": "4×2",
+  "grams": 509,
+  "costUsd": 11.2,
+  "printHours": 43.3,
+  "farms": {
+    "1 × A1 mini": 46.3,
+    "3 × A1 mini": 15.5,
+    "3 × A1 mini + 1 × S3": 12.2,
+    "9 × A1 mini + 2 × S3": 4.7
+  },
+  "assemblyHours": 11.5,
+  "buildSec": 70
+}

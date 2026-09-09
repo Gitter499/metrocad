@@ -1,6 +1,10 @@
 # Philadelphia: our layout vs the operator's map
 
+<<<<<<< Updated upstream
 Source drawing: `philadelphia.svg` · 900 mm wide · 281/524 stations placed on the official geometry · 277 labels placed, 73 moved away from where the drawing has them · 10 geometry problems.
+=======
+Source drawing: `septa-june26.svg` · 900 mm wide · 281/524 stations placed on the official geometry · 277 labels placed, 73 moved away from where the drawing has them · 10 geometry problems.
+>>>>>>> Stashed changes
 
 ![side by side](screenshots/verify-philadelphia.png)
 
