@@ -138,15 +138,22 @@ export function slicePlate(input: SliceInput, m?: ManifoldToplevel): SliceResult
     const { CrossSection: CS } = m;
     for (const L of layers) {
       if (!L.loops.length) continue;
-      const region = new CS(L.loops, 'EvenOdd');
-      for (let k = 0; k < process.perimeters; k++) {
-        L.walls.push(offsetCS(region, -(w / 2 + k * w)));
+      // Cluster loops by bounding-box overlap (union-find): separate parts on the plate never interact,
+      // and a plate of 100 label plates with letters is ~100 tiny booleans instead of one huge one.
+      const clusters = clusterLoops(L.loops);
+      for (let k = 0; k < process.perimeters; k++) L.walls.push([]);
+      for (const loops of clusters) {
+        const region = new CS(loops, 'EvenOdd');
+        for (let k = 0; k < process.perimeters; k++) L.walls[k].push(...offsetCS(region, -(w / 2 + k * w)));
+        L.infill.push(...(infillInset > 0 ? offsetCS(region, -infillInset) : region.toPolygons()));
+        if (L.index === 0 && process.skirtLoops > 0) {
+          for (let k = 0; k < process.skirtLoops; k++) {
+            skirt[k] = skirt[k] ?? [];
+            skirt[k].push(...offsetCS(region, process.skirtDistance + w / 2 + k * w, 'Round'));
+          }
+        }
+        region.delete();
       }
-      L.infill = infillInset > 0 ? offsetCS(region, -infillInset) : region.toPolygons();
-      if (L.index === 0 && process.skirtLoops > 0) {
-        for (let k = 0; k < process.skirtLoops; k++) skirt.push(offsetCS(region, process.skirtDistance + w / 2 + k * w, 'Round'));
-      }
-      region.delete();
     }
   } else {
     for (const L of layers) {
@@ -382,6 +389,29 @@ function linkSegments(segs: Float64Array, ns: number): Loop[] {
 }
 
 /* ----------------------------- 2D helpers ----------------------------- */
+
+/** Group loops whose bounding boxes touch/overlap (transitively) — each group is an independent 2D region. */
+function clusterLoops(loops: Loop[]): Loop[][] {
+  const n = loops.length;
+  const bb = loops.map((l) => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const p of l) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; } return [x0, y0, x1, y1]; });
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const eps = 0.01;
+  // sort by x0 for a sweep so this stays fast for thousands of loops
+  const order = bb.map((_, i) => i).sort((a, b) => bb[a][0] - bb[b][0]);
+  for (let ii = 0; ii < order.length; ii++) {
+    const i = order[ii];
+    for (let jj = ii + 1; jj < order.length; jj++) {
+      const j = order[jj];
+      if (bb[j][0] > bb[i][2] + eps) break;
+      if (bb[j][1] > bb[i][3] + eps || bb[j][3] < bb[i][1] - eps) continue;
+      const a = find(i), b = find(j); if (a !== b) parent[a] = b;
+    }
+  }
+  const groups = new Map<number, Loop[]>();
+  for (let i = 0; i < n; i++) { const r = find(i); (groups.get(r) ?? groups.set(r, []).get(r)!).push(loops[i]); }
+  return [...groups.values()];
+}
 
 function loopPerimeter(loop: Loop): number {
   let p = 0;

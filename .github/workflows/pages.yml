@@ -4,14 +4,12 @@ on:
     branches: [main, master, 'claude/**']
   workflow_dispatch:
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  build:
+  build-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,16 +18,12 @@ jobs:
       - run: npm ci
       - run: npm run build -w @metrocad/core
       - run: npm run build -w @metrocad/web
-      - uses: actions/configure-pages@v5
-        with: { enablement: true }
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: apps/web/dist }
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: touch apps/web/dist/.nojekyll
+      # Publishes to the gh-pages branch; GitHub serves it at https://<owner>.github.io/metrocad/
+      # (Settings → Pages → Source: "Deploy from a branch" → gh-pages / root, enabled automatically
+      # for public repos when the branch appears).
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: apps/web/dist
+          force_orphan: true

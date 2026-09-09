@@ -13,7 +13,7 @@ for (const n of names) {
   process.stderr.write(`verifying ${n}…\n`);
   try {
     const rep = await verifyNetwork(net, { networkQid: QIDS[n] });
-    await new Promise((r) => setTimeout(r, 2500));
+    await new Promise((r) => setTimeout(r, 6000));
     sections.push(reportMarkdown(rep), '');
     failed += rep.failed;
     console.log(`${n}: ${rep.passed} pass, ${rep.warned} warn, ${rep.failed} fail, ${rep.unmatched} unmatched`);
