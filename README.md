@@ -8,7 +8,7 @@
 
 MetroCAD pulls the real network from OpenStreetMap, lays it out as an abstract octilinear diagram (the "tube map" look), turns every line, station, interchange and label into snap-fit 3D-printable parts with engraved IDs, nests them onto your printers' beds, slices them for each machine in your farm, schedules the jobs, and walks you through assembly with AR. Everything runs in the browser or from the command line.
 
-Verified against the web: every bundled network is checked against Wikipedia/Wikidata line facts (station counts, termini, colours, links to the official route diagrams on Commons) by a GitHub Action — see [docs/verification.md](docs/verification.md). The schematic layout keeps geographic proportions (corridors may only shrink/stretch within 0.6–1.7 × their true length) and expands the dense centre the way official diagrams do, so lines run where you expect them.
+Verified against the web: every bundled network is checked against Wikipedia/Wikidata line facts (station counts, termini, colours, links to the official route diagrams on Commons) by a GitHub Action — see [docs/verification.md](docs/verification.md). That check covers the *data*; for the *look*, use the official-map import below and compare side by side.
 
 ## Live app
 
@@ -20,6 +20,18 @@ Open it on a phone for AR: iPhone/iPad uses AR Quick Look (USDZ, anchored to a v
   <img src="docs/screenshots/app-3d-preview.png" alt="Wall preview" width="49%">
   <img src="docs/screenshots/app-print-beds.png" alt="Print beds" width="49%">
 </p>
+
+## Official-map geometry
+
+Algorithms can only produce a map *in the style of* a transit diagram. To get the real thing, MetroCAD imports the official (or community-drawn official-style) diagram as SVG and uses its geometry directly: line paths are picked by colour, stations are placed at their tick marks / interchange markers by name, and labels sit exactly where the drawing puts them. The 3D parts, plates, slicing and assembly plan are then built from that geometry.
+
+* **Auto**: for known cities the app fetches the Commons schematic (currently London: *London Underground, Overground, DLR and Elizabeth line map*, CC BY-SA). Add more in `KNOWN_MAP_SVGS`.
+* **My SVG**: upload any official SVG (or `--map-svg file.svg` on the CLI). Operators often publish their diagrams as SVG/PDF; a PDF can be converted with Inkscape.
+* **Generated layout**: the algorithmic fallback (semi-geographic, octilinear or geographic) for cities without a drawing.
+
+| Source drawing (Commons) | MetroCAD import (all 267 stations, 11 lines matched) |
+|---|---|
+| ![source](docs/screenshots/source-london-commons.png) | ![import](docs/screenshots/layout-london-official.png) |
 
 ## What you get
 
