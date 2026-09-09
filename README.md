@@ -89,7 +89,7 @@ The GitHub Action (`verify.yml`) downloads SEPTA's current PDF, converts it, run
 
 Every part is a 2.5D extrusion generated with [manifold-3d](https://github.com/elalish/manifold) (robust CSG, guaranteed watertight meshes). Defaults are for a 0.4 mm nozzle in matte PLA.
 
-* **Base tiles** (4 mm). The default **outline** base prints filament only where the map is: the footprint of every groove, station pocket and label pocket grown by an 8 mm margin (`--base-margin`), with floating labels bridged back to their line by a short strip so the base stays one connected shape. That footprint is then cut into as few bed-sized pieces as possible (`packages/core/src/tiling.ts`: greedy band covers in both bed orientations and directions with full-, half- and third-bed cells, every piece split into its connected components, neighbours merged while the union still fits the bed; the configuration with the fewest tiles wins, in well under a second). Small tiles share print plates. Pittsburgh at 900 mm goes from 72 rectangular tiles to 29 outline pieces covering 14 % of the wall rectangle; Philadelphia at 600 mm drops from 647 g to 171 g of PLA. `--base tiles` gives full rectangular tiles covering the wall area instead. The top face carries **1.2 mm grooves** shaped exactly like the line ribbons, **pockets** for every station marker, and **pockets** for every label. Parts drop in and register themselves; nothing needs measuring.
+* **Base tiles** (4 mm). The default **outline** base prints filament only where the map is: the footprint of every groove, station pocket and label pocket grown by an 8 mm margin (`--base-margin`), with floating labels bridged back to their line by a short strip so the base stays one connected shape. That footprint is then cut into as few bed-sized pieces as possible (`packages/core/src/tiling.ts`: greedy band covers in both bed orientations and directions with full-, half- and third-bed cells, every piece split into its connected components, neighbours merged while the union still fits the bed; the configuration with the fewest tiles wins, in well under a second). Small tiles share print plates. Pittsburgh at 900 mm goes from 72 rectangular tiles and 3.4 kg of PLA to 30 outline pieces covering 8 % of the wall rectangle and 368 g; Philadelphia at 900 mm from 1792 g to 808 g (`docs/matrix.md` has every city). `--base tiles` gives full rectangular tiles covering the wall area instead. The top face carries **1.2 mm grooves** shaped exactly like the line ribbons, **pockets** for every station marker, and **pockets** for every label. Parts drop in and register themselves; nothing needs measuring.
 * **Snap-fit**: every piece has small friction lugs on its foot (0.1 mm interference beyond the clearance), so line pieces, dots, rings, plugs and labels click into their grooves and pockets without glue. Only the tiles need to be fixed to the wall (a Command strip or two per tile).
 * **Line ribbons** (6 mm wide, 2 mm above the tile) are cut at interchanges — the joint is hidden under the interchange marker — and, only when a run is longer than the bed, at a straight section between stations. Pieces that cross a tile seam lock the tiles together. Where two lines cross, the pieces are **half-lapped** so both stay in one plane.
 * **Stations**: single-line stations are a white dot dropped through a hole in the ribbon into a pocket in the tile. Interchanges are a black ring plus a white plug (pill-shaped when several parallel lines meet).
@@ -168,9 +168,9 @@ Tests: `npm test` (layout determinism, manifold validity of every part kind, pac
 |---|---|
 | ![Front](docs/screenshots/app-3d-front.png) | ![Bed](docs/screenshots/app-print-bed-focus.png) |
 
-| Outline base (Philadelphia, 600 mm) |
+| Outline base (Pittsburgh, 900 mm): tiles cut to the map, small ones sharing plates |
 |---|
-| ![Outline base](docs/screenshots/base-outline-philadelphia.png) |
+| ![Outline base](docs/screenshots/base-outline-pittsburgh.png) |
 
 Philadelphia in the app (`docs/screenshots/philadelphia/`, every tab): wall, close-up, print beds, assembly, AR, farm schedule.
 
