@@ -8,11 +8,11 @@
 
 MetroCAD pulls the real network from OpenStreetMap, lays it out as an abstract octilinear diagram (the "tube map" look), turns every line, station, interchange and label into snap-fit 3D-printable parts with engraved IDs, nests them onto your printers' beds, slices them for each machine in your farm, schedules the jobs, and walks you through assembly with AR. Everything runs in the browser or from the command line.
 
-Verified against the web: every bundled network is checked against Wikipedia/Wikidata line facts (station counts, termini, colours, official route diagrams) by a GitHub Action — see [docs/verification.md](docs/verification.md).
+Verified against the web: every bundled network is checked against Wikipedia/Wikidata line facts (station counts, termini, colours, links to the official route diagrams on Commons) by a GitHub Action — see [docs/verification.md](docs/verification.md). The schematic layout keeps geographic proportions (corridors may only shrink/stretch within 0.6–1.7 × their true length) and expands the dense centre the way official diagrams do, so lines run where you expect them.
 
 ## Live app
 
-**https://gitter499.github.io/metrocad/** — built and deployed by GitHub Actions from this repository (enable *Settings → Pages → Source: GitHub Actions* once if the first deploy doesn't enable it automatically).
+**https://gitter499.github.io/metrocad/** — the Pages workflow builds the app and pushes it to the `gh-pages` branch on every push. One-time setup: in the repository *Settings → Pages* set **Source: Deploy from a branch → `gh-pages` / root**; after that every push redeploys.
 
 Open it on a phone for AR: iPhone/iPad uses AR Quick Look (USDZ, anchored to a vertical wall at true size), Android uses Scene Viewer / WebXR. No developer account, TestFlight or app store needed.
 
