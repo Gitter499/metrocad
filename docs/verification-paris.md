@@ -1,6 +1,6 @@
 # Paris: our layout vs the operator's map
 
-Source drawing: `paris-commons.svg` · 900 mm wide · 308/321 stations placed on the official geometry · 272 labels placed, 39 moved away from where the drawing has them · 26 geometry problems.
+Source drawing: `paris.svg` · 900 mm wide · 308/321 stations placed on the official geometry · 272 labels placed, 39 moved away from where the drawing has them · 26 geometry problems.
 
 ![side by side](screenshots/verify-paris.png)
 

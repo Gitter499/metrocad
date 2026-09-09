@@ -13,6 +13,10 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | Green | 10 | 9 |  | ✓ | ✗ |  | ⚠️ station count 10 vs Wikipedia 9; colour #009544 vs #69bd47 |
 | Red | 19 | 19 |  | ✓ | ✓ |  | ✅  |
 
+### atlanta.official
+
+verification error: Cannot read properties of undefined (reading '0')
+
 ### London Underground — Wikidata [Q20075](https://www.wikidata.org/wiki/Q20075)
 
 8 pass · 2 warn · 1 fail · 0 unmatched — 2026-09-09
@@ -78,7 +82,7 @@ verification error: Cannot read properties of undefined (reading '0')
 | 11 | 19 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_11_-_2024.svg) | ⚠️ station count 19 vs Wikidata 25 (may include planned stations) |
 | 12 | 31 |  | 31 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_12_-_2012-12-18.svg) | ✅  |
 | 13 | 32 |  | 33 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_13_-_2021-11-30.svg) | ⚠️ station count 32 vs Wikidata 33 |
-| 14 | 21 |  | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Carte_M%C3%A9tro_Paris_Ligne_14_(2024-06).svg) | ⚠️ station count 21 vs Wikidata 24 (may include planned stations) |
+| 14 | 21 |  | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_14_(2024-06).svg) | ⚠️ station count 21 vs Wikidata 24 (may include planned stations) |
 
 ### paris.official
 

@@ -1,6 +1,6 @@
 # Philadelphia: our layout vs the operator's map
 
-Source drawing: `septa-june26.svg` · 900 mm wide · 280/524 stations placed on the official geometry · 276 labels placed, 73 moved away from where the drawing has them · 9 geometry problems.
+Source drawing: `philadelphia.svg` · 900 mm wide · 280/524 stations placed on the official geometry · 276 labels placed, 73 moved away from where the drawing has them · 9 geometry problems.
 
 ![side by side](screenshots/verify-philadelphia.png)
 
@@ -41,26 +41,26 @@ Source drawing: `septa-june26.svg` · 900 mm wide · 280/524 stations placed on 
 
 ## Import log
 
-* line B: #f37324 (29% of 23 stations)
-* line D: #5e9732 (18% of 49 stations)
+* line B: #f37324 (27% of 23 stations)
+* line D: #5e9732 (4% of 49 stations)
 * line G: #ef3d42 (0% of 0 stations)
-* line L: #007dc3 (58% of 28 stations)
-* line M: #781d7d (28% of 22 stations)
-* line PATCO: #ef3d42 (74% of 11 stations)
-* line T: #5e9732 (41% of 22 stations)
-* line AIR: #3a6e8f (57% of 10 stations)
-* line CHE: #3a6e8f (88% of 14 stations)
-* line CHW: #3a6e8f (81% of 14 stations)
-* line CYN: #3a6e8f (79% of 6 stations)
-* line FOX: #3a6e8f (76% of 10 stations)
-* line LAN: #3a6e8f (25% of 26 stations)
-* line MED: #3a6e8f (80% of 19 stations)
-* line NOR: #3a6e8f (83% of 16 stations)
-* line PAO: #3a6e8f (54% of 26 stations)
-* line TRE: #3a6e8f (57% of 15 stations)
-* line WAR: #3a6e8f (71% of 16 stations)
-* line WTR: #3a6e8f (64% of 22 stations)
-* line WIL: #3a6e8f (26% of 22 stations)
+* line L: #007dc3 (51% of 28 stations)
+* line M: #781d7d (23% of 22 stations)
+* line PATCO: #ef3d42 (65% of 11 stations)
+* line T: #5e9732 (35% of 22 stations)
+* line AIR: #3a6e8f (53% of 10 stations)
+* line CHE: #3a6e8f (81% of 14 stations)
+* line CHW: #3a6e8f (75% of 14 stations)
+* line CYN: #3a6e8f (73% of 6 stations)
+* line FOX: #3a6e8f (70% of 10 stations)
+* line LAN: #3a6e8f (24% of 26 stations)
+* line MED: #3a6e8f (74% of 19 stations)
+* line NOR: #3a6e8f (77% of 16 stations)
+* line PAO: #3a6e8f (51% of 26 stations)
+* line TRE: #3a6e8f (53% of 15 stations)
+* line WAR: #3a6e8f (66% of 16 stations)
+* line WTR: #3a6e8f (60% of 22 stations)
+* line WIL: #3a6e8f (24% of 22 stations)
 * SVG import: "North Philadelphia" is drawn as 2 separate stations (73 mm apart); split
 * SVG import: "Radnor" is drawn as 2 separate stations (58 mm apart); split
 * SVG import: "Clifton-Aldan" is drawn as 2 separate stations (67 mm apart); split

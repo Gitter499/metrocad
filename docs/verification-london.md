@@ -1,6 +1,6 @@
 # London: our layout vs the operator's map
 
-Source drawing: `london-official.svg` · 900 mm wide · 267/267 stations placed on the official geometry · 242 labels placed, 4 moved away from where the drawing has them · 9 geometry problems.
+Source drawing: `london.svg` · 900 mm wide · 267/267 stations placed on the official geometry · 242 labels placed, 4 moved away from where the drawing has them · 9 geometry problems.
 
 ![side by side](screenshots/verify-london.png)
 
