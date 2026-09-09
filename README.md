@@ -27,9 +27,10 @@ Algorithms can only produce a map *in the style of* a transit diagram. To get th
 
 * **Auto**: for known cities the app fetches the Commons schematic (currently London: *London Underground, Overground, DLR and Elizabeth line map*, CC BY-SA). Add more in `KNOWN_MAP_SVGS`.
 * **My SVG**: upload any official SVG (or `--map-svg file.svg` on the CLI). Operators often publish their diagrams as SVG/PDF; a PDF can be converted with Inkscape.
-* **Generated layout**: the algorithmic fallback for cities without a drawing. *Auto* picks strict octilinear for small networks (≤ 6 lines — the way SEPTA, PRT and most US operators draw theirs, horizontals/verticals preferred, diagonals only for genuinely diagonal runs) and semi-geographic for big ones (Paris-style).
+* **Generated layout**: the algorithmic fallback for cities without a drawing. *Auto* picks strict octilinear for networks with up to 8 distinct line colours (the way SEPTA, PRT and most US operators draw theirs, horizontals/verticals preferred, diagonals only for genuinely diagonal runs) and semi-geographic for bigger ones (Paris-style). Services that share a colour (SEPTA's Regional Rail lines, B1/B2/B3, T1–T5) share one ribbon, count once at interchanges, and merge into one line (B, T, D) as on the operator's map.
+* **Official station lists** (`packages/core/src/official/`): where OpenStreetMap's route relations are incomplete, the operator's own map is the source of truth. SEPTA Regional Rail's 13 lines are bundled with their official station order, OSM coordinates, the interchanges SEPTA draws as one node (Suburban / 15th Street / City Hall, Jefferson / 11th Street) and "schematic" positions that stretch Center City the way the printed map does. Overlays apply automatically whenever the fetched network matches (`applyOfficialOverlays`).
 
-Philadelphia and Pittsburgh, checked against the operators' own files: SEPTA's 2025 *Metro & Frequent Bus* network map PDF contains only a raster image (no vector paths or text), and its vector PDFs are single-line strip maps; PRT's T map PDF has vector paths but all text converted to outlines, so station names cannot be read. Neither can be imported as geometry yet (a raster/outlined map would need OCR and line tracing). The bundled renders for those two therefore come from the octilinear generator. Any vector map with real text — e.g. an SVG exported by the operator's designers — imports directly; PDFs convert with `python -c "import pymupdf; ..."` (see `scripts/pdf2svg.py`) or Inkscape.
+Philadelphia (the default city: SEPTA Metro L/B/M/T/D/G, all 13 Regional Rail lines and PATCO) and Pittsburgh, checked against the operators' own files: SEPTA's 2025 *Metro & Frequent Bus* network map PDF contains only a raster image (no vector paths or text), and its vector PDFs are single-line strip maps; PRT's T map PDF has vector paths but all text converted to outlines, so station names cannot be read. Neither can be imported as geometry yet (a raster/outlined map would need OCR and line tracing). The bundled renders for those two therefore come from the octilinear generator. Any vector map with real text — e.g. an SVG exported by the operator's designers — imports directly; PDFs convert with `python -c "import pymupdf; ..."` (see `scripts/pdf2svg.py`) or Inkscape.
 
 | Source drawing (Commons) | MetroCAD import (all 267 stations, 11 lines matched) |
 |---|---|
@@ -62,11 +63,11 @@ The same geometry built as parts, in the app (`docs/screenshots/london/`): wall 
 
 Every part is a 2.5D extrusion generated with [manifold-3d](https://github.com/elalish/manifold) (robust CSG, guaranteed watertight meshes). Defaults are for a 0.4 mm nozzle in matte PLA.
 
-* **Base tiles** (4 mm) split to fit your bed. The top face carries **1.2 mm grooves** shaped exactly like the line ribbons, **pockets** for every station marker, and **pockets** for every label. Parts drop in and register themselves; nothing needs measuring.
+* **Base tiles** (4 mm) split to fit your bed. Two styles: rectangular tiles covering the wall area, or **outline** tiles (`--base outline`, "Outline tiles (least filament)" in the app) trimmed to the map's footprint plus an 8 mm margin (`--base-margin`), empty cells dropped — Philadelphia at 600 mm drops from 647 g to 171 g of PLA. The top face carries **1.2 mm grooves** shaped exactly like the line ribbons, **pockets** for every station marker, and **pockets** for every label. Parts drop in and register themselves; nothing needs measuring.
 * **Snap-fit**: every piece has small friction lugs on its foot (0.1 mm interference beyond the clearance), so line pieces, dots, rings, plugs and labels click into their grooves and pockets without glue. Only the tiles need to be fixed to the wall (a Command strip or two per tile).
 * **Line ribbons** (6 mm wide, 2 mm above the tile) are cut at interchanges — the joint is hidden under the interchange marker — and, only when a run is longer than the bed, at a straight section between stations. Pieces that cross a tile seam lock the tiles together. Where two lines cross, the pieces are **half-lapped** so both stay in one plane.
 * **Stations**: single-line stations are a white dot dropped through a hole in the ribbon into a pocket in the tile. Interchanges are a black ring plus a white plug (pill-shaped when several parallel lines meet).
-* **Labels**: a plate in the base colour with raised letters (0.8 mm) in the accent colour — printed as one object with one filament change at 1.0 mm, so it disappears into the tile and only the letters show. When the text would be too small to print well (< 4.5 mm, or on request) the tiles get shallow pockets sized for **label-maker tape** (6–24 mm) instead, and the bundle includes `labels-tape.csv` with every text to print.
+* **Labels**: a plate in the base colour with raised letters (0.8 mm) in the accent colour — printed as one object with one filament change at 1.0 mm, so it disappears into the tile and only the letters show. Letters are never smaller than 4 mm (the clean-print floor for a 0.4 mm nozzle). Every label — generated or taken from an official drawing — goes through the same collision placement: the drawing's own pose first (nudged a little if our fatter ribbons get in the way), then the eight positions around the marker and two 45° poses, then a smaller size; a label that still cannot fit is dropped and counted rather than overlapped. On request (`--label-mode tape`) the tiles get shallow pockets sized for **label-maker tape** (6–24 mm) instead, and the bundle includes `labels-tape.csv` with every text to print.
 * Clearance between mating parts is 0.15 mm (adjustable).
 
 Sizes scale with the wall-art width you ask for; text, line width and clearances stay in real millimetres so they always print.
@@ -133,13 +134,17 @@ Tests: `npm test` (layout determinism, manifold validity of every part kind, pac
 |---|---|
 | ![Paris](docs/screenshots/layout-paris.png) | ![London](docs/screenshots/layout-london.png) |
 
-| Philadelphia (SEPTA + PATCO) | Pittsburgh (PRT light rail) |
+| Philadelphia (SEPTA Metro + Regional Rail + PATCO) | Pittsburgh (PRT light rail) |
 |---|---|
 | ![Philadelphia](docs/screenshots/layout-philadelphia.png) | ![Pittsburgh](docs/screenshots/layout-pittsburgh.png) |
 
 | Front view | Print bed close-up |
 |---|---|
 | ![Front](docs/screenshots/app-3d-front.png) | ![Bed](docs/screenshots/app-print-bed-focus.png) |
+
+| Outline base (Philadelphia, 600 mm) |
+|---|
+| ![Outline base](docs/screenshots/base-outline-philadelphia.png) |
 
 ## License
 

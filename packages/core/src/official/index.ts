@@ -19,6 +19,8 @@ export interface OfficialOverlay {
   coords?: Record<string, [number, number]>;
   /** Stations the official map draws as one interchange although OSM names them separately; "Name@REF" pins a name to a line. */
   interchanges?: string[][];
+  /** Schematic geography: positions (lat, lon) that spread a dense downtown the way the official map does; applied last. */
+  pins?: Record<string, [number, number]>;
 }
 
 export interface OverlayReport { overlay: string; replaced: string[]; added: string[]; createdStations: string[]; missing: string[] }
@@ -111,6 +113,12 @@ export function applyOverlay(net: MetroNetwork, name: string, overlay: OfficialO
   for (const s of net.stations) s.lines = [];
   for (const l of net.lines) for (const sid of new Set(l.sequences.flat())) { const st = net.stations.find((s) => s.id === sid); if (st && !st.lines.includes(l.id)) st.lines.push(l.id); }
   net.stations = net.stations.filter((s) => s.lines.length > 0);
+  for (const [entry, [lat, lon]] of Object.entries(overlay.pins ?? {})) {
+    const [n, ref] = entry.split('@');
+    const lineIds = ref ? net.lines.filter((l) => l.ref === ref || l.members?.includes(ref)).map((l) => l.id) : undefined;
+    const st = net.stations.find((s) => (!lineIds || s.lines.some((id) => lineIds.includes(id))) && (normalizeName(s.name) === normalizeName(n) || s.name.split(' / ').some((part) => normalizeName(part) === normalizeName(n))));
+    if (st) { st.lat = lat; st.lon = lon; }
+  }
   if (!net.modes.includes('train') && overlay.lines.some((l) => l.mode === 'train')) net.modes.push('train');
   log?.(`Official overlay ${name}: replaced ${report.replaced.length} OSM lines with ${report.added.length} official lines, ${report.createdStations.length} stations added from the official list${report.missing.length ? `, ${report.missing.length} without coordinates: ${report.missing.join(', ')}` : ''}`);
   return report;

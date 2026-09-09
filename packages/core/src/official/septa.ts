@@ -16,6 +16,14 @@ export const SEPTA_REGIONAL_RAIL: OfficialOverlay = {
   coords: SEPTA_COORDS,
   // As on the SEPTA Metro map: City Hall / 15th Street / Suburban Station is one interchange; so is Jefferson / 11th Street.
   interchanges: [['Suburban', '15th Street@L', 'City Hall@B'], ['Jefferson', '11th Street@L'], ['30th Street', '30th Street@L']],
+  // Market Street's stations sit 300 m apart against a 70 km-wide network; the official map stretches Center City.
+  // These "schematic" positions keep the real order (30th → 15th → 13th → 11th → 8th → 5th → 2nd) with room for markers.
+  pins: {
+    '30th Street': [39.9555, -75.1900], 'Suburban': [39.9535, -75.1740], '13th Street': [39.9525, -75.1625], 'Jefferson': [39.9525, -75.1510],
+    '8th & Market': [39.9520, -75.1395], '5th Street': [39.9515, -75.1300], '2nd Street': [39.9510, -75.1210], 'Spring Garden@L': [39.9610, -75.1180],
+    '15th-16th & Locust': [39.9470, -75.1740], '12th-13th & Locust': [39.9465, -75.1625], '9th-10th & Locust': [39.9460, -75.1490], 'Franklin Square': [39.9535, -75.1330],
+    'Race-Vine': [39.9600, -75.1740], 'Walnut-Locust': [39.9460, -75.1780], 'Lombard-South': [39.9400, -75.1780],
+  },
   replaceModes: ['train'],
   lines: [
     { ref: 'AIR', name: 'Airport Line', color: RR, mode: 'train', stations: [...CC, 'Penn Medicine', 'Eastwick', 'Airport Terminal A', 'Airport Terminal B', 'Airport Terminals C & D', 'Airport Terminals E & F'] },

@@ -1,4 +1,4 @@
-// London from the official-map SVG: screenshots of every tab. MAP_SVG=path node scripts/screenshot-london-all.mjs
+// Every tab of the web app for one city. CITY=Philadelphia [MAP_SVG=path] [OUT=docs/screenshots/philadelphia] node scripts/screenshot-city-all.mjs
 import { chromium } from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -16,16 +16,16 @@ await new Promise((r) => server.listen(4175, r));
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 page.setDefaultTimeout(300000);
-const out = path.resolve('docs/screenshots/london');
+const city = process.env.CITY ?? 'Philadelphia';
+const out = path.resolve(process.env.OUT ?? `docs/screenshots/${city.toLowerCase().replace(/\s+/g, '-')}`);
 fs.mkdirSync(out, { recursive: true });
 const shot = async (name) => { try { await page.screenshot({ path: path.join(out, name), timeout: 180000, animations: 'disabled' }); console.log('shot', name); } catch (e) { console.log('shot failed', name, e.message.split('\n')[0]); } };
 const tab = async (name) => { await page.click(`#tabs button[data-tab="${name}"]`); await page.waitForTimeout(1200); };
 await page.goto('http://localhost:4175/#nostart', { waitUntil: 'load' });
-await page.fill('#city', 'London');
-await page.selectOption('#officialMap', 'custom');
-await page.setInputFiles('#mapFile', process.env.MAP_SVG);
-await page.waitForTimeout(500);
-await page.evaluate(() => document.querySelector('.chip[data-city="London"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+await page.fill('#city', city);
+if (process.env.MAP_SVG) { await page.selectOption('#officialMap', 'custom'); await page.setInputFiles('#mapFile', process.env.MAP_SVG); await page.waitForTimeout(500); }
+if (process.env.BASE) await page.selectOption('#base', process.env.BASE);
+await page.evaluate((c) => document.querySelector(`.chip[data-city="${c}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })), city);
 await page.waitForFunction(() => document.getElementById('results')?.style.display === '', null, { timeout: 300000 });
 console.log('status:', await page.textContent('#status'));
 await page.waitForTimeout(1500);
@@ -34,7 +34,7 @@ await page.click('#dock button[data-view="front"]'); await page.waitForTimeout(9
 await page.click('#dock button[data-view="closeup"]'); await page.waitForTimeout(900); await shot('03-wall-closeup.png');
 await tab('map'); await shot('04-map.png');
 await tab('beds'); await page.waitForTimeout(1500); await shot('05-print-beds.png');
-await page.evaluate(() => document.querySelectorAll('#bedlist button')[22]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await page.waitForTimeout(1200); await shot('06-print-bed-focus.png');
+await page.evaluate(() => document.querySelectorAll('#bedlist button')[Number(process.env.BED ?? 12)]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))); await page.waitForTimeout(1200); await shot('06-print-bed-focus.png');
 await tab('assemble');
 await page.waitForFunction(() => !!document.querySelector('#planhost svg'), null, { timeout: 180000 }).catch(() => console.log('assembly timeout'));
 await page.waitForTimeout(800);
