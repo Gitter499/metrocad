@@ -10,6 +10,7 @@ export * from './layout/route.js';
 export * from './layout/labels.js';
 export * as vec from './vec.js';
 export * from './geometry.js';
+export * from './tiling.js';
 export * from './export/stl.js';
 export * from './export/threemf.js';
 export * from './export/glb.js';

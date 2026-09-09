@@ -25,7 +25,7 @@ usage: metrocad <city> [options]
   --labels all|major|none
   --label-size <mm>    label font size (default 5.5)
   --lang local|en      station name language (default local)
-  --base tiles|outline|none  grooved base tiles (default), tiles trimmed to the map outline (least filament), or floating parts + paper template
+  --base outline|tiles|none  outline tiles cut to the map footprint in as few bed-sized pieces as possible (default, least filament), full rectangular tiles, or floating parts + paper template
   --base-margin <mm>   outline base: margin beyond the map content (default 8)
   --keyholes           add keyhole slots to the back of the tiles
   --layout schematic|geographic
@@ -88,7 +88,7 @@ const params: PartialParams = {
   labels: (opts.labels as any) ?? 'all',
   labelFontSize: Number(opts['label-size'] ?? 5.5),
   labelLanguage: (opts.lang as any) ?? 'local',
-  base: (opts.base as any) ?? 'tiles',
+  base: (opts.base as any) ?? 'outline',
   baseMargin: Number(opts['base-margin'] ?? 8),
   keyholes: !!opts.keyholes,
   lineWidth: Number(opts['line-width'] ?? 6),

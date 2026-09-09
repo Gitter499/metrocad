@@ -72,6 +72,9 @@ export function buildFromNetwork(net: MetroNetwork, opts: BuildOptions): FullBui
     triangles: geo.parts.reduce((s, p) => s + p.triangles, 0),
     volumeMm3: geo.parts.reduce((s, p) => s + p.volumeMm3, 0),
     estimatedGrams: estimateGrams(geo.parts),
+    tiles: geo.tiles.count ?? 0,
+    baseAreaMm2: geo.tiles.areaMm2 ?? 0,
+    wallAreaMm2: layout.width * layout.height,
     buildMs: performance.now() - t0,
   };
   return { network: net, layout, params, parts: geo.parts, plates, stats, warnings, tiles: geo.tiles, svgImport };

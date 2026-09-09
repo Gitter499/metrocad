@@ -37,9 +37,13 @@ export function packPlates(parts: Part[], params: DesignParams, opts: PackOption
   const z = zLevels(params);
   const plates: Plate[] = [];
 
-  // Tiles: one per plate
-  for (const t of parts.filter((p) => p.kind === 'tile')) {
+  // Tiles: a full-bed tile gets its own plate; smaller (outline) tiles are packed together like any other part.
+  const tileParts = parts.filter((p) => p.kind === 'tile');
+  const smallTiles: Part[] = [];
+  for (const t of tileParts) {
     const w = t.bbox.max[0] - t.bbox.min[0], h = t.bbox.max[1] - t.bbox.min[1];
+    const packable = (w + gap <= usable.x && h + gap <= usable.y) || (w + gap <= usable.y && h + gap <= usable.x);
+    if (packable && tileParts.length > 1) { smallTiles.push(t); continue; }
     const rot = w <= usable.x && h <= usable.y ? 0 : 90;
     const dx = rot ? margin + t.bbox.max[1] : margin - t.bbox.min[0];
     const dy = rot ? margin - t.bbox.min[0] : margin - t.bbox.min[1];
@@ -49,6 +53,7 @@ export function packPlates(parts: Part[], params: DesignParams, opts: PackOption
   // Colour groups
   const groups = new Map<string, { color: string; colorName: string; colorChange?: Plate['colorChange']; items: Item[] }>();
   const labelGroups = new Map<string, Part[]>();
+  if (smallTiles.length) groups.set('base', { color: smallTiles[0].color, colorName: smallTiles[0].colorName, items: smallTiles.map((t) => itemOf(t.id, [t], [t])) });
   for (const p of parts) {
     if (p.kind === 'tile' || p.kind === 'tape' || p.kind === 'tapeText') continue;
     if (p.group) { const g = labelGroups.get(p.group) ?? []; g.push(p); labelGroups.set(p.group, g); continue; }
@@ -73,7 +78,8 @@ export function packPlates(parts: Part[], params: DesignParams, opts: PackOption
     currentOpen = open;
     const items = [...g.items].sort((a, b) => b.area - a.area);
     for (const it of items) {
-      const masks = rotations.map((r) => rasterize(it.footprintParts, r, cell, dil)).filter((m) => m.w <= wCells && m.h <= hCells);
+      const rots = it.parts[0]?.kind === 'tile' ? rotations.filter((r) => r % 90 === 0) : rotations;
+      const masks = rots.map((r) => rasterize(it.footprintParts, r, cell, dil)).filter((m) => m.w <= wCells && m.h <= hCells);
       if (!masks.length) {
         // Cannot fit on the bed at any rotation: put it alone on a plate flagged over-full.
         const m = rasterize(it.footprintParts, 0, cell, dil);
@@ -100,8 +106,10 @@ export function packPlates(parts: Part[], params: DesignParams, opts: PackOption
   }
   // Names
   const counts = new Map<string, number>();
+  const partById = new Map(parts.map((q) => [q.id, q]));
   for (const p of plates) {
-    if (p.items.length === 1 && parts.find((q) => q.id === p.items[0].partId)?.kind === 'tile') continue;
+    const tilesOn = p.items.map((it) => partById.get(it.partId)).filter((q): q is Part => !!q && q.kind === 'tile');
+    if (tilesOn.length === p.items.length && tilesOn.length) { p.name = tilesOn.length === 1 ? tilesOn[0].name : `Base tiles ${tilesOn.map((q) => q.tag ?? q.id).join(' ')}`; continue; }
     const n = (counts.get(p.colorName) ?? 0) + 1; counts.set(p.colorName, n);
     p.name = `${p.colorName} plate ${n}`;
   }

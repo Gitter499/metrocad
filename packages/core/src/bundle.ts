@@ -158,6 +158,7 @@ function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[num
   lines.push(`* ${r.stats.lines} lines, ${r.stats.stations} stations (${r.stats.majorStations} interchanges/termini), ${r.stats.labels} labels`);
   lines.push(`* ${r.stats.parts} parts on ${r.stats.plates} plates for a ${p.bed.x} × ${p.bed.y} mm bed`);
   lines.push(`* Estimated filament: **≈ ${Math.round(r.stats.estimatedGrams)} g** (tiles at ~15 % infill)`);
+  if (r.tiles.outline) lines.push(`* Base: ${r.tiles.count} outline tiles covering ${Math.round((r.stats.baseAreaMm2 / r.stats.wallAreaMm2) * 100)} % of the ${Math.round(r.layout.width)} × ${Math.round(r.layout.height)} mm wall rectangle.`);
   lines.push('');
   lines.push('## Files');
   lines.push('');
@@ -204,8 +205,9 @@ function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[num
   lines.push('');
   lines.push('## Assembly');
   lines.push('');
-  if (p.base === 'tiles') {
-    lines.push(`1. Print the ${r.tiles.cols} × ${r.tiles.rows} base tiles (${r.tiles.w.toFixed(0)} × ${r.tiles.h.toFixed(0)} mm each). Lay them out face-up in a grid; the line grooves show you the order.`);
+  if (p.base !== 'none') {
+    if (r.tiles.outline) lines.push(`1. Print the ${r.tiles.count} base tiles. They are cut to the map's outline (${Math.round(((r.tiles.areaMm2 ?? 0) / (r.tiles.rectAreaMm2 || 1)) * 100)} % of the wall rectangle) into as few bed-sized pieces as possible; lay them out face-up following \`assembly/assembly-plan.svg\` — the shapes and the line grooves only fit one way.`);
+    else lines.push(`1. Print the ${r.tiles.cols} × ${r.tiles.rows} base tiles (${r.tiles.w.toFixed(0)} × ${r.tiles.h.toFixed(0)} mm each). Lay them out face-up in a grid; the line grooves show you the order.`);
     lines.push('2. Press the line pieces into their grooves. Pieces are cut so that joints fall under station markers or at straight runs; every piece that crosses a tile seam locks the two tiles together.');
     lines.push('3. Drop the station dots into their holes, then the interchange rings and their white plugs.');
     lines.push('4. Seat each label plate in its pocket (the pocket outline matches the label shape).');

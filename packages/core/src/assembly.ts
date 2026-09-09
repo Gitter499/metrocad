@@ -1,6 +1,6 @@
 /** Assembly plan: which piece goes where (by ID), grouped into steps, as JSON + a printable SVG. */
 import type { FullBuildResult } from './pipeline.js';
-import type { Part } from './types.js';
+import type { Part, Vec2 } from './types.js';
 import { roundedHull } from './layout/index.js';
 
 export interface PlanPiece {
@@ -27,10 +27,12 @@ export interface PlanStep {
   hint: string;
 }
 
+export interface TileTag { tag: string; x: number; y: number; w: number; h: number; /** Outline tiles: the tile's real shape. */ polygon?: Vec2[][] }
+
 export interface AssemblyPlan {
   place: string;
   sizeMm: { width: number; height: number };
-  tiles: { cols: number; rows: number; w: number; h: number; tags: { tag: string; x: number; y: number; w: number; h: number }[] };
+  tiles: { cols: number; rows: number; w: number; h: number; outline: boolean; tags: TileTag[] };
   steps: PlanStep[];
   /** Every piece by tag for the finder. */
   index: Record<string, PlanPiece>;
@@ -38,9 +40,12 @@ export interface AssemblyPlan {
 
 export function buildAssemblyPlan(r: FullBuildResult): AssemblyPlan {
   const t = r.tiles;
-  const tileTags: { tag: string; x: number; y: number; w: number; h: number }[] = [];
-  for (let row = 0; row < t.rows; row++) for (let col = 0; col < t.cols; col++) tileTags.push({ tag: `R${row + 1}C${col + 1}`, x: t.ox + col * t.w, y: t.oy + row * t.h, w: t.w, h: t.h });
-  const tilesTouched = (p: Part) => tileTags.filter((tt) => p.bbox.min[0] < tt.x + tt.w && p.bbox.max[0] > tt.x && p.bbox.min[1] < tt.y + tt.h && p.bbox.max[1] > tt.y).map((tt) => tt.tag);
+  const tileTags: TileTag[] = t.cells
+    ? t.cells.map((c) => ({ tag: c.tag, x: c.x, y: c.y, w: c.w, h: c.h, polygon: t.outline ? c.polygon : undefined }))
+    : [];
+  if (!t.cells) for (let row = 0; row < t.rows; row++) for (let col = 0; col < t.cols; col++) tileTags.push({ tag: `R${row + 1}C${col + 1}`, x: t.ox + col * t.w, y: t.oy + row * t.h, w: t.w, h: t.h });
+  const hits = (x0: number, y0: number, x1: number, y1: number) => tileTags.filter((tt) => x0 < tt.x + tt.w && x1 > tt.x && y0 < tt.y + tt.h && y1 > tt.y && (!tt.polygon || boxHitsPolygon(x0, y0, x1, y1, tt.polygon))).map((tt) => tt.tag);
+  const tilesTouched = (p: Part) => hits(p.bbox.min[0], p.bbox.min[1], p.bbox.max[0], p.bbox.max[1]);
   const plateOf = new Map<string, string>();
   for (const pl of r.plates) for (const it of pl.items) plateOf.set(it.partId, pl.name);
   const lineRefById = new Map(r.layout.lines.map((l) => [l.id, l.ref]));
@@ -53,7 +58,7 @@ export function buildAssemblyPlan(r: FullBuildResult): AssemblyPlan {
   });
   const steps: PlanStep[] = [];
   const tiles = r.parts.filter((p) => p.kind === 'tile');
-  if (tiles.length) steps.push({ id: 'tiles', title: `Base tiles (${t.cols} × ${t.rows})`, pieces: tiles.map(piece), hint: 'Lay the tiles face-up in a grid. Each tile has its ID and a north arrow engraved on the back: R = row from the bottom, C = column from the left.' });
+  if (tiles.length) steps.push({ id: 'tiles', title: t.outline ? `Base tiles (${tiles.length})` : `Base tiles (${t.cols} × ${t.rows})`, pieces: tiles.map(piece), hint: t.outline ? 'Lay the tiles face-up following the plan: they are cut to the map\'s outline, so their shapes only fit one way. Each tile has its ID and a north arrow engraved on the back: R = row from the bottom, C = order from the left.' : 'Lay the tiles face-up in a grid. Each tile has its ID and a north arrow engraved on the back: R = row from the bottom, C = column from the left.' });
   for (const ln of r.layout.lines) {
     const ps = r.parts.filter((p) => p.kind === 'line' && p.lineId === ln.id);
     if (ps.length) steps.push({ id: `line-${ln.id}`, title: `Line ${ln.ref}`, color: ln.color, pieces: ps.map(piece), hint: `Press the ${ps.length} pieces of line ${ln.ref} into their grooves. Piece IDs are engraved underneath (${ln.ref}-01, ${ln.ref}-02 …) and run from one end of the line to the other.` });
@@ -65,10 +70,48 @@ export function buildAssemblyPlan(r: FullBuildResult): AssemblyPlan {
   const labels = r.parts.filter((p) => p.kind === 'labelPlate');
   if (labels.length) steps.push({ id: 'labels', title: 'Labels', pieces: labels.map(piece), hint: 'Each label plate has N-number engraved underneath; press it into the pocket with the matching outline next to its station.' });
   const tapes = r.layout.labels.filter((l) => l.tape);
-  if (tapes.length) steps.push({ id: 'tape', title: 'Tape labels', pieces: tapes.map((l) => ({ partId: `tape-${l.n}`, tag: `T${String(l.n).padStart(3, '0')}`, name: l.text, kind: 'labelPlate' as const, color: '#ffffff', x: l.x + l.width / 2, y: l.y + l.height / 2, tiles: tileTags.filter((tt) => l.x < tt.x + tt.w && l.x + l.width > tt.x && l.y < tt.y + tt.h && l.y + l.height > tt.y).map((tt) => tt.tag), stationName: l.text })), hint: `Print the labels on ${r.params.tapeWidth} mm label-maker tape (list in labels-tape.csv) and stick each one into its pocket.` });
+  if (tapes.length) steps.push({ id: 'tape', title: 'Tape labels', pieces: tapes.map((l) => ({ partId: `tape-${l.n}`, tag: `T${String(l.n).padStart(3, '0')}`, name: l.text, kind: 'labelPlate' as const, color: '#ffffff', x: l.x + l.width / 2, y: l.y + l.height / 2, tiles: hits(l.x, l.y, l.x + l.width, l.y + l.height), stationName: l.text })), hint: `Print the labels on ${r.params.tapeWidth} mm label-maker tape (list in labels-tape.csv) and stick each one into its pocket.` });
   const index: Record<string, PlanPiece> = {};
   for (const s of steps) for (const p of s.pieces) index[p.tag] = p;
-  return { place: r.network.displayName, sizeMm: { width: r.layout.width, height: r.layout.height }, tiles: { cols: t.cols, rows: t.rows, w: t.w, h: t.h, tags: tileTags }, steps, index };
+  return { place: r.network.displayName, sizeMm: { width: r.layout.width, height: r.layout.height }, tiles: { cols: t.cols, rows: t.rows, w: t.w, h: t.h, outline: !!t.outline, tags: tileTags }, steps, index };
+}
+
+/** Does an axis-aligned box overlap a polygon (outer rings with even-odd holes)? */
+function boxHitsPolygon(x0: number, y0: number, x1: number, y1: number, polygon: Vec2[][]): boolean {
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (pointInPolygon(cx, cy, polygon)) return true;
+  for (const ring of polygon) for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    if (a[0] >= x0 && a[0] <= x1 && a[1] >= y0 && a[1] <= y1) return true;
+    if (segmentHitsBox(a, b, x0, y0, x1, y1)) return true;
+  }
+  return false;
+}
+function pointInPolygon(x: number, y: number, polygon: Vec2[][]): boolean {
+  let inside = false;
+  for (const ring of polygon) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i], b = ring[j];
+    if ((a[1] > y) !== (b[1] > y) && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) inside = !inside;
+  }
+  return inside;
+}
+function segmentHitsBox(a: Vec2, b: Vec2, x0: number, y0: number, x1: number, y1: number): boolean {
+  let t0 = 0, t1 = 1;
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const p = [-dx, dx, -dy, dy], q = [a[0] - x0, x1 - a[0], a[1] - y0, y1 - a[1]];
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) { if (q[i] < 0) return false; }
+    else { const r = q[i] / p[i]; if (p[i] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } }
+  }
+  return true;
+}
+/** A spot inside an outline tile for its tag: the centre if inside, else the polygon vertex nearest the centre. */
+function labelSpot(tt: TileTag): Vec2 {
+  const c: Vec2 = [tt.x + tt.w / 2, tt.y + tt.h / 2];
+  if (!tt.polygon || pointInPolygon(c[0], c[1], tt.polygon)) return c;
+  let best = c, bd = Infinity;
+  for (const ring of tt.polygon) for (const q of ring) { const d = Math.hypot(q[0] - c[0], q[1] - c[1]); if (d < bd) { bd = d; best = q; } }
+  return best;
 }
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -83,8 +126,15 @@ export function renderAssemblyPlanSvg(r: FullBuildResult, plan: AssemblyPlan, op
   if (opts.fontDataUrl) out.push(`<defs><style>@font-face{font-family:'Inter';src:url(${opts.fontDataUrl}) format('truetype');font-weight:700;}</style></defs>`);
   out.push(`<rect width="${f(W)}" height="${f(H)}" fill="#ffffff"/>`);
   for (const tt of plan.tiles.tags) {
-    out.push(`<rect x="${f(tt.x)}" y="${f(Y(tt.y + tt.h))}" width="${f(tt.w)}" height="${f(tt.h)}" fill="none" stroke="#bbb" stroke-width="0.4" stroke-dasharray="3 2"/>`);
-    out.push(`<text x="${f(tt.x + 3)}" y="${f(Y(tt.y + tt.h) + 7)}" font-family="Inter, sans-serif" font-weight="700" font-size="6" fill="#999">${tt.tag}</text>`);
+    if (tt.polygon) {
+      const d = tt.polygon.map((ring) => ring.map((q, i) => `${i ? 'L' : 'M'}${f(q[0])} ${f(Y(q[1]))}`).join(' ') + 'Z').join(' ');
+      out.push(`<path d="${d}" fill="#f2f2f2" stroke="#999" stroke-width="0.5" fill-rule="evenodd"/>`);
+      const at = labelSpot(tt);
+      out.push(`<text x="${f(at[0])}" y="${f(Y(at[1]) + 2)}" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="5" fill="#777">${tt.tag}</text>`);
+    } else {
+      out.push(`<rect x="${f(tt.x)}" y="${f(Y(tt.y + tt.h))}" width="${f(tt.w)}" height="${f(tt.h)}" fill="none" stroke="#bbb" stroke-width="0.4" stroke-dasharray="3 2"/>`);
+      out.push(`<text x="${f(tt.x + 3)}" y="${f(Y(tt.y + tt.h) + 7)}" font-family="Inter, sans-serif" font-weight="700" font-size="6" fill="#999">${tt.tag}</text>`);
+    }
   }
   const dim = opts.step ? 0.18 : 0.55;
   for (const ln of r.layout.lines) {

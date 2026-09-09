@@ -148,7 +148,7 @@ export interface FarmPrinter {
   speedFactor?: number;
 }
 
-/** tiles: rectangular grooved tiles covering the wall area · outline: tiles trimmed to the map's footprint (+ baseMargin), empty cells dropped — least filament · none: floating parts + paper template. */
+/** outline (default): base only where the map is — the footprint (+ baseMargin) cut into as few bed-sized pieces as possible · tiles: rectangular grooved tiles covering the whole wall area · none: floating parts + paper template. */
 export type BaseStyle = 'tiles' | 'outline' | 'none';
 export type LabelPolicy = 'all' | 'major' | 'none';
 /** print: raised 3D-printed letters · tape: pockets sized for label-maker tape · auto: tape when the text is too small to print well. */
@@ -298,6 +298,11 @@ export interface BuildStats {
   triangles: number;
   volumeMm3: number;
   estimatedGrams: number;
+  /** Base tiles printed. */
+  tiles: number;
+  /** Printed base area vs. the wall rectangle (mm²). */
+  baseAreaMm2: number;
+  wallAreaMm2: number;
   buildMs: number;
 }
 

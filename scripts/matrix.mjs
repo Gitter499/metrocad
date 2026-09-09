@@ -45,7 +45,7 @@ for (const city of cities) {
     assemblyMin *= 1.15; // finding pieces, breaks
     const row = {
       city, place: CITY_NAMES[city] ?? net.displayName.split(',')[0], width, lineWidth: params.lineWidth, labelFontSize: params.labelFontSize, height: Math.round(r.layout.height), lines: r.stats.lines, stations: r.stats.stations, labels: r.stats.labels,
-      parts: parts.length, byKind, plates: r.plates.length, tiles: `${r.tiles.cols}×${r.tiles.rows}`,
+      parts: parts.length, byKind, plates: r.plates.length, tiles: r.tiles.outline ? `${r.tiles.count}` : `${r.tiles.cols}×${r.tiles.rows}`, baseAreaPct: Math.round((r.stats.baseAreaMm2 / r.stats.wallAreaMm2) * 100),
       grams: Math.round(sliced.totalGrams), costUsd: Math.round(sliced.totalGrams * PLA_USD_PER_G * 100) / 100,
       printHours: Math.round(sliced.totalSec / 360) / 10, farms: Object.fromEntries(Object.entries(farms).map(([k, v]) => [k, Math.round(v / 360) / 10])),
       assemblyHours: Math.round(assemblyMin / 6) / 10, buildSec: Math.round((performance.now() - t0) / 1000),

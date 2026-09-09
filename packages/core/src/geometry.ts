@@ -6,6 +6,7 @@ import type { ManifoldToplevel, Manifold, CrossSection } from 'manifold-3d';
 import type { DesignParams, Hex, LayoutChain, LayoutStation, MeshData, Part, ProgressFn, Vec2 } from './types.js';
 import type { LayoutResult } from './layout/index.js';
 import type { TextFont } from './text.js';
+import { tileFootprint, bridgeIslands } from './tiling.js';
 import { add, sub, norm, fromAngle, angleOf, bboxOf, rotate, dist } from './vec.js';
 
 export interface ZLevels {
@@ -36,7 +37,19 @@ export function zLevels(p: DesignParams): ZLevels {
   };
 }
 
-export interface TileGrid { cols: number; rows: number; w: number; h: number; ox: number; oy: number; /** Outline base: tiles trimmed to the map footprint, empty cells dropped. */ outline?: boolean; /** Tiles actually produced (grid cells minus empty ones). */ count?: number }
+/** One printed base tile: its tag, bounding box and outline (mm, wall coordinates). */
+export interface TileCell { tag: string; id: string; x: number; y: number; w: number; h: number; areaMm2: number; polygon: Vec2[][] }
+export interface TileGrid {
+  cols: number; rows: number; w: number; h: number; ox: number; oy: number;
+  /** Outline base: tiles cover only the map footprint, cut into as few bed-sized pieces as possible. */
+  outline?: boolean;
+  /** Tiles actually produced. */
+  count?: number;
+  /** Every tile with its outline; always present when a base is built. */
+  cells?: TileCell[];
+  /** Printed base area (mm²) and the wall rectangle it replaces. */
+  areaMm2?: number; rectAreaMm2?: number;
+}
 
 /** A point at least a few mm inside a cross-section, as close to `near` as the shape allows (for engraving IDs). */
 function innerPoint(cs: CrossSection, near: Vec2): Vec2 {
@@ -389,22 +402,34 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     // inside corners softened; the tile grid covers only that footprint and each tile is trimmed to it. Saves most of
     // the filament a rectangular base spends on empty corners and margins.
     let foot: CrossSection | undefined;
+    interface Cell { tag: string; rect: CrossSection; x0: number; y0: number; w: number; h: number }
+    const cells: Cell[] = [];
     if (params.base === 'outline') {
       const all = CrossSection.union([groove, pockets, ...(labelPockets ? [labelPockets] : []), ...(tapePockets ? [tapePockets] : [])]);
       const grown = all.offset(params.baseMargin + 4, 'Round'); all.delete();
-      foot = grown.offset(-4, 'Round'); grown.delete();
+      const foot0 = grown.offset(-4, 'Round'); grown.delete();
+      const br = bridgeIslands(m, foot0, Math.max(6, params.baseMargin));
+      if (br.foot !== foot0) foot0.delete();
+      foot = br.foot;
+      if (br.islands) warnings.push(`Outline base: ${br.islands} island(s) of the map are too far from the rest to bridge; they print as separate tiles.`);
       const fb = foot.bounds();
-      const g = tileGrid({ width: fb.max[0] - fb.min[0], height: fb.max[1] - fb.min[1] }, params);
-      tiles = { ...g, ox: fb.min[0], oy: fb.min[1], outline: true };
+      const usable: [number, number] = [params.bed.x - 2 * params.bedMargin, params.bed.y - 2 * params.bedMargin];
+      const t = tileFootprint(m, foot, usable);
+      tiles = { cols: t.cols, rows: t.rows, w: t.bedW, h: t.bandH, ox: fb.min[0], oy: fb.min[1], outline: true };
+      for (const pc of t.pieces) cells.push({ tag: pc.tag, rect: pc.cs, x0: pc.x, y0: pc.y, w: pc.w, h: pc.h });
+    } else {
+      for (let r = 0; r < tiles.rows; r++) for (let c = 0; c < tiles.cols; c++) {
+        const x0 = tiles.ox + c * tiles.w, y0 = tiles.oy + r * tiles.h;
+        cells.push({ tag: `R${r + 1}C${c + 1}`, rect: CrossSection.square([tiles.w, tiles.h], false).translate([x0, y0]), x0, y0, w: tiles.w, h: tiles.h });
+      }
     }
+    tiles.cells = [];
+    tiles.areaMm2 = 0; tiles.rectAreaMm2 = layout.width * layout.height;
     let ti = 0, made = 0;
-    for (let r = 0; r < tiles.rows; r++) for (let c = 0; c < tiles.cols; c++) {
-      const x0 = tiles.ox + c * tiles.w, y0 = tiles.oy + r * tiles.h;
-      const rect0 = CrossSection.square([tiles.w, tiles.h], false).translate([x0, y0]);
-      let rect = rect0;
-      if (foot) { rect = rect0.intersect(foot); rect0.delete(); }
+    for (const cell of cells) {
+      const { tag: tileTag, rect, x0, y0 } = cell;
+      const tw = cell.w, th = cell.h;
       ti++;
-      if (rect.area() < 25) { rect.delete(); continue; } // an empty grid cell (outline base)
       let tile = rect.extrude(params.baseThickness);
       const cutWith = (cs: CrossSection, floor: number) => {
         const clip = cs.intersect(rect);
@@ -420,8 +445,8 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
       if (tapePockets) cutWith(tapePockets, z.baseTop - tapeDepth);
       if (params.keyholes) {
         // Two keyhole slots on the back: a 7 mm head + 4 mm slot, 1.8 mm deep, near the top edge.
-        for (const kx of [x0 + tiles.w * 0.25, x0 + tiles.w * 0.75]) {
-          const ky = y0 + tiles.h - 18;
+        for (const kx of [x0 + tw * 0.25, x0 + tw * 0.75]) {
+          const ky = y0 + th - 18;
           const head = CrossSection.circle(3.5).translate([kx, ky]);
           const slot = CrossSection.square([4, 12], false).translate([kx - 2, ky]);
           const kh = head.add(slot);
@@ -434,15 +459,17 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
           head.delete(); slot.delete(); kh.delete();
         }
       }
-      const tileTag = `R${r + 1}C${c + 1}`;
       // ID + north arrow on the underside: centred, or (outline tiles) at a spot safely inside the trimmed shape.
-      const idAt: Vec2 = foot ? innerPoint(rect, [x0 + tiles.w / 2, y0 + tiles.h / 2]) : [x0 + tiles.w / 2, y0 + tiles.h / 2];
-      const idSize = foot ? Math.min(8, tiles.w / 12) : Math.min(14, tiles.w / 9);
+      const idAt: Vec2 = foot ? innerPoint(rect, [x0 + tw / 2, y0 + th / 2]) : [x0 + tw / 2, y0 + th / 2];
+      const idSize = foot ? Math.min(8, Math.max(4, Math.min(tw, th) / 6)) : Math.min(14, tw / 9);
+      const id = `tile-${tileTag.toLowerCase()}`;
+      tiles.cells.push({ tag: tileTag, id, x: x0, y: y0, w: tw, h: th, areaMm2: rect.area(), polygon: rect.toPolygons().map((poly) => poly.map((q): Vec2 => [q[0], q[1]])) });
+      tiles.areaMm2 += rect.area();
       rect.delete();
       tile = engrave(tile, `${tileTag} ^`, idAt, 0, idSize, 0);
-      pushPart(tile, { id: `tile-r${r + 1}c${c + 1}`, name: `Base tile row ${r + 1} col ${c + 1}`, kind: 'tile', color: params.colors.base, colorName: 'Base', tag: tileTag });
+      pushPart(tile, { id, name: `Base tile ${tileTag}`, kind: 'tile', color: params.colors.base, colorName: 'Base', tag: tileTag });
       made++;
-      progress('geometry', 0.78 + 0.2 * (ti / (tiles.rows * tiles.cols)), `Tile ${ti}/${tiles.rows * tiles.cols}`);
+      progress('geometry', 0.78 + 0.2 * (ti / cells.length), `Tile ${ti}/${cells.length}`);
     }
     tiles.count = made;
     foot?.delete();

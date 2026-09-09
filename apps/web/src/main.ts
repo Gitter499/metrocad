@@ -41,7 +41,7 @@ app.innerHTML = `
     <label class="field"><span>P1S / X1</span><input id="nP1" type="number" value="1" min="0" max="20" style="width:64px"></label>
     <label class="field"><span>Ultimaker S3</span><input id="nS3" type="number" value="1" min="0" max="20" style="width:64px"></label>
     <label class="field"><span>Plates sized for</span><select id="plateBed" style="width:150px"><option value="min">Smallest bed (any printer)</option><option value="bambu-a1-mini">A1 mini 180²</option><option value="bambu-p1s">P1S 256²</option><option value="ultimaker-s3">S3 230×190</option></select></label>
-    <label class="field"><span>Base</span><select id="base" style="width:190px"><option value="tiles">Grooved snap-fit tiles</option><option value="outline">Outline tiles (least filament)</option><option value="none">No base, paper template</option></select></label>
+    <label class="field"><span>Base</span><select id="base" style="width:190px"><option value="outline">Outline tiles (least filament)</option><option value="tiles">Full rectangular tiles</option><option value="none">No base, paper template</option></select></label>
   </div>
   <details>
     <summary>Style</summary>
@@ -169,7 +169,8 @@ function showResult(m: Extract<FromWorker, { type: 'built' }>, ms: number) {
     ['Labels', `${s.labels}${s.unlabeled ? ` (+${s.unlabeled} skipped)` : ''}`],
     ['Parts', `${s.parts}`],
     ['Plates', `${s.plates}`],
-    ['Tiles', `${m.tiles.cols} × ${m.tiles.rows}`],
+    ['Tiles', m.tiles.outline ? `${m.tiles.count} (outline)` : `${m.tiles.cols} × ${m.tiles.rows}`],
+    ...(m.tiles.outline ? [['Base area', `${Math.round((s.baseAreaMm2 / s.wallAreaMm2) * 100)} % of the rectangle`] as [string, string]] : []),
     ['Filament', `≈ ${Math.round(s.estimatedGrams)} g`],
   ];
   $('stats').innerHTML = rows.map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('');

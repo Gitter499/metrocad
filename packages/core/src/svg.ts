@@ -1,4 +1,5 @@
 /** 2D SVG rendering of a MapLayout (preview, paper template, README images). */
+import type { TileGrid } from './geometry.js';
 import type { DesignParams, MapLayout } from './types.js';
 import { roundedHull } from './layout/index.js';
 
@@ -10,7 +11,7 @@ export interface SvgOptions {
   template?: boolean;
   title?: string;
   /** Tile grid (mm) to draw seams in template mode. */
-  tiles?: { cols: number; rows: number; w: number; h: number; ox: number; oy: number };
+  tiles?: TileGrid;
   background?: string;
 }
 
@@ -28,7 +29,13 @@ export function renderSvg(layout: MapLayout, params: DesignParams, opts: SvgOpti
   if (opts.fontDataUrl) parts.push(`<defs><style>@font-face{font-family:'${fam}';src:url(${opts.fontDataUrl}) format('truetype');font-weight:700;}</style></defs>`);
   if (opts.title) parts.push(`<title>${esc(opts.title)}</title>`);
   parts.push(`<rect x="0" y="0" width="${f(W)}" height="${f(H)}" fill="${bg}"/>`);
-  if (opts.template && opts.tiles) {
+  if (opts.template && opts.tiles?.cells && opts.tiles.outline) {
+    for (const c of opts.tiles.cells) {
+      const d = c.polygon.map((ring) => ring.map((q, i) => `${i ? 'L' : 'M'}${f(q[0])} ${f(Y(q[1]))}`).join(' ') + 'Z').join(' ');
+      parts.push(`<path d="${d}" fill="none" stroke="#bbb" stroke-width="0.3" stroke-dasharray="4 3" fill-rule="evenodd"/>`);
+      parts.push(`<text x="${f(c.x + c.w / 2)}" y="${f(Y(c.y + c.h / 2))}" text-anchor="middle" font-size="4" fill="#bbb" font-family="sans-serif">${c.tag}</text>`);
+    }
+  } else if (opts.template && opts.tiles) {
     const t = opts.tiles;
     for (let c = 0; c <= t.cols; c++) parts.push(`<line x1="${f(t.ox + c * t.w)}" y1="0" x2="${f(t.ox + c * t.w)}" y2="${f(H)}" stroke="#bbb" stroke-width="0.3" stroke-dasharray="4 3"/>`);
     for (let r = 0; r <= t.rows; r++) parts.push(`<line x1="0" y1="${f(Y(t.oy + r * t.h))}" x2="${f(W)}" y2="${f(Y(t.oy + r * t.h))}" stroke="#bbb" stroke-width="0.3" stroke-dasharray="4 3"/>`);

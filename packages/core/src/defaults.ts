@@ -9,7 +9,7 @@ export const DEFAULT_PARAMS: DesignParams = {
   clearance: 0.15,
 
   tramStops: 'major',
-  base: 'tiles',
+  base: 'outline',
   baseThickness: 4,
   baseMargin: 8,
   grooveDepth: 1.2,
