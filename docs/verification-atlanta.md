@@ -1,6 +1,6 @@
 # Atlanta: our layout vs the operator's map
 
-Source drawing: `atlanta-0.svg` · 900 mm wide · 41/43 stations placed on the official geometry · 36 labels placed, 32 moved away from where the drawing has them · 16 geometry problems.
+Source drawing: `atlanta.svg` · 900 mm wide · 41/43 stations placed on the official geometry · 36 labels placed, 32 moved away from where the drawing has them · 16 geometry problems.
 
 ![side by side](screenshots/verify-atlanta.png)
 

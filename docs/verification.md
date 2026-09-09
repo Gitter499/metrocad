@@ -81,7 +81,7 @@ verification error: Cannot read properties of undefined (reading '0')
 | 7 | 38 |  | 38 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_7_-_2021-04-10.svg) | ✅  |
 | 7bis | 8 |  | 8 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_7bis_-_2012-12-15.svg) | ✅  |
 | 8 | 38 |  | 38 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_8_-_2012-12-15.svg) | ✅  |
-| 9 | 37 |  | 40 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_9_-_2012-12-15.svg) | ⚠️ station count 37 vs Wikidata 40 (may include planned stations) |
+| 9 | 37 |  | 40 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Paris_Metro_Ligne_9.svg) | ⚠️ station count 37 vs Wikidata 40 (may include planned stations) |
 | 10 | 23 |  | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_10_-_1997-07-02.svg) | ⚠️ station count 23 vs Wikidata 29 (may include planned stations) |
 | 11 | 19 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_11_-_2024.svg) | ⚠️ station count 19 vs Wikidata 25 (may include planned stations) |
 | 12 | 31 |  | 31 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_12_-_2012-12-18.svg) | ✅  |

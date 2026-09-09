@@ -1,6 +1,6 @@
 # Tokyo: our layout vs the operator's map
 
-Source drawing: `tokyo-2.svg` · 900 mm wide · 215/221 stations placed on the official geometry · 167 labels placed, 22 moved away from where the drawing has them · 27 geometry problems.
+Source drawing: `tokyo-0.svg` · 900 mm wide · 215/221 stations placed on the official geometry · 167 labels placed, 22 moved away from where the drawing has them · 27 geometry problems.
 
 ![side by side](screenshots/verify-tokyo.png)
 

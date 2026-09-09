@@ -1,6 +1,6 @@
 # Vienna: our layout vs the operator's map
 
-Source drawing: `vienna-1.svg` · 900 mm wide · 98/99 stations placed on the official geometry · 90 labels placed, 20 moved away from where the drawing has them · 6 geometry problems.
+Source drawing: `vienna-0.svg` · 900 mm wide · 98/99 stations placed on the official geometry · 90 labels placed, 20 moved away from where the drawing has them · 6 geometry problems.
 
 ![side by side](screenshots/verify-vienna.png)
 
