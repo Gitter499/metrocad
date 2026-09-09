@@ -9,7 +9,7 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
 | Bakerloo | 25 | 25 | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Bakerloo_Line.png) | ✅  |
-| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_line_%26_London_map.svg) | ✅  |
+| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_Line.svg) | ✅  |
 | Circle | 35 | 36 | 37 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Circle_line_%26_London_map.svg) | ⚠️ station count 35 vs Wikipedia 36 |
 | District | 60 | 60 | 61 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:District_Line.svg) | ✅  |
 | Hammersmith & City | 29 | 29 | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Hammersmith_%26_City_Line_%26_London_map.svg) | ✅  |
@@ -22,11 +22,11 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 
 ### Métro de Paris — Wikidata [Q50716](https://www.wikidata.org/wiki/Q50716)
 
-6 pass · 5 warn · 5 fail · 0 unmatched — 2026-09-09
+6 pass · 10 warn · 0 fail · 0 unmatched — 2026-09-09
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | 25 |  | 28 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_1_-_2012-12-15.svg) | ❌ station count 25 vs Wikidata 28 |
+| 1 | 25 |  | 28 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_1_-_2012-12-15.svg) | ⚠️ station count 25 vs Wikidata 28 (may include planned stations) |
 | 2 | 25 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_2_-_2004.svg) | ✅  |
 | 3 | 25 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_3_-_2012-12-15.svg) | ✅  |
 | 3bis | 4 |  | 5 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Paris_Metro_Ligne_3bis.svg) | ⚠️ station count 4 vs Wikidata 5 |
@@ -36,22 +36,22 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | 7 | 38 |  | 38 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_7_-_2021-04-10.svg) | ✅  |
 | 7bis | 8 |  | 8 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_7bis_-_2012-12-15.svg) | ✅  |
 | 8 | 38 |  | 38 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_8_-_2012-12-15.svg) | ✅  |
-| 9 | 37 |  | 40 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_9_-_2012-12-15.svg) | ❌ station count 37 vs Wikidata 40 |
-| 10 | 23 |  | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_10_-_1997-07-02.svg) | ❌ station count 23 vs Wikidata 29 |
-| 11 | 19 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_11_-_2024.svg) | ❌ station count 19 vs Wikidata 25 |
-| 12 | 31 |  | 31 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_12_-_2012-12-18.svg) | ✅  |
+| 9 | 37 |  | 40 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_9_-_2012-12-15.svg) | ⚠️ station count 37 vs Wikidata 40 (may include planned stations) |
+| 10 | 23 |  | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_10_-_1997-07-02.svg) | ⚠️ station count 23 vs Wikidata 29 (may include planned stations) |
+| 11 | 19 |  | 25 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_11_-_2024.svg) | ⚠️ station count 19 vs Wikidata 25 (may include planned stations) |
+| 12 | 31 |  | 31 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Paris_Metro_Ligne_12.svg) | ✅  |
 | 13 | 32 |  | 33 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_13_-_2021-11-30.svg) | ⚠️ station count 32 vs Wikidata 33 |
-| 14 | 21 |  | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_14_(2024-06).svg) | ❌ station count 21 vs Wikidata 24 |
+| 14 | 21 |  | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Plan_Lin%C3%A9aire_M%C3%A9tro_Paris_Ligne_14_(2024-06).svg) | ⚠️ station count 21 vs Wikidata 24 (may include planned stations) |
 
 ### SEPTA — Wikidata [Q7451006](https://www.wikidata.org/wiki/Q7451006)
 
-0 pass · 0 warn · 0 fail · 3 unmatched — 2026-09-09
+0 pass · 1 warn · 0 fail · 2 unmatched — 2026-09-09
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
 | B | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | L | 28 |  |  |  |  |  | ➖ no matching line item on Wikidata |
-| PATCO | 14 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| PATCO | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:PATCO-Map.png) | ⚠️ termini: OSM [15th-16th & Locust, Lindenwold, Woodcrest] vs Wikidata [Lindenwold, 15–16th & Locust] |
 
 ### Pittsburgh Regional Transit — Wikidata [Q7199143](https://www.wikidata.org/wiki/Q7199143)
 
