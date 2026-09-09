@@ -193,13 +193,41 @@ export function extractSvg(src: string): SvgExtract {
       else if (el.tag === 'line') addPolys([[ap(local, [Number(el.attrs.x1 ?? 0), Number(el.attrs.y1 ?? 0)]), ap(local, [Number(el.attrs.x2 ?? 0), Number(el.attrs.y2 ?? 0)])]]);
       else if (el.tag === 'polyline' || el.tag === 'polygon') { const nums = (el.attrs.points ?? '').split(/[\s,]+/).filter(Boolean).map(Number); const pts: Vec2[] = []; for (let k = 0; k + 1 < nums.length; k += 2) pts.push(ap(local, [nums[k], nums[k + 1]])); if (el.tag === 'polygon' && pts.length) pts.push(pts[0]); addPolys([pts]); }
       else if (el.tag === 'text') {
-        const name = collectText(el).replace(/\s+/g, ' ').trim();
-        if (name) {
-          const tx = Number(el.attrs.x ?? (findFirst(el, 'tspan')?.attrs.x) ?? 0), ty = Number(el.attrs.y ?? (findFirst(el, 'tspan')?.attrs.y) ?? 0);
-          const p = ap(local, [tx, ty]);
-          const angle = -Math.atan2(local[1], local[0]) * 180 / Math.PI;
-          const size = Number(String(st['font-size'] ?? '10').replace(/[a-z%]+$/, '')) * mscale(local);
-          texts.push({ name, x: p[0], y: p[1], anchor: (st['text-anchor'] as any) ?? 'start', angle: Math.round(angle * 10) / 10, size });
+        const angle = -Math.atan2(local[1], local[0]) * 180 / Math.PI;
+        const size = Number(String(st['font-size'] ?? '10').replace(/[a-z%]+$/, '')) * mscale(local);
+        const anchor = (st['text-anchor'] as any) ?? 'start';
+        const firstNum = (v?: string) => (v === undefined ? undefined : Number(String(v).trim().split(/[\s,]+/)[0]));
+        // PDF-derived SVGs put several labels into one <text>, one positioned <tspan> each: treat those separately.
+        const positioned = el.children.filter((c) => c.tag === 'tspan' && c.attrs.x !== undefined && c.attrs.y !== undefined);
+        if (positioned.length >= 2) {
+          const fs = Number(String(st['font-size'] ?? '10').replace(/[a-z%]+$/, ''));
+          for (const c of positioned) {
+            const raw = collectText(c);
+            const xs = String(c.attrs.x).trim().split(/[\s,]+/).map(Number);
+            const y = firstNum(c.attrs.y)!;
+            // Per-glyph x positions: a gap wider than ~1.2 em separates two labels on the same baseline.
+            const chars = [...raw];
+            const runs: { text: string; x: number }[] = [];
+            if (xs.length >= chars.length && chars.length > 1) {
+              let start = 0;
+              for (let k = 1; k <= chars.length; k++) {
+                if (k === chars.length || xs[k] - xs[k - 1] > fs * 1.2) { runs.push({ text: chars.slice(start, k).join(''), x: xs[start] }); start = k; }
+              }
+            } else runs.push({ text: raw, x: xs[0] });
+            for (const r of runs) {
+              const name = r.text.replace(/\s+/g, ' ').trim();
+              if (!name) continue;
+              const p = ap(local, [r.x, y]);
+              texts.push({ name, x: p[0], y: p[1], anchor, angle: Math.round(angle * 10) / 10, size });
+            }
+          }
+        } else {
+          const name = collectText(el).replace(/\s+/g, ' ').trim();
+          if (name) {
+            const tx = firstNum(el.attrs.x) ?? firstNum(findFirst(el, 'tspan')?.attrs.x) ?? 0, ty = firstNum(el.attrs.y) ?? firstNum(findFirst(el, 'tspan')?.attrs.y) ?? 0;
+            const p = ap(local, [tx, ty]);
+            texts.push({ name, x: p[0], y: p[1], anchor, angle: Math.round(angle * 10) / 10, size });
+          }
         }
       }
       else if (el.tag === 'use' || el.tag === 'circle' || el.tag === 'ellipse') {
@@ -242,6 +270,16 @@ function collectText(el: El): string {
 }
 
 /* ------------------------------ layout from SVG ------------------------------ */
+
+/** Expand the abbreviations transit maps use so they normalise like OSM names. */
+export function expandAbbrev(name: string): string {
+  return name
+    .replace(/\bTrans\.?\s*Ctr\.?/gi, 'Transportation Center').replace(/\bT\.?\s?C\.?(?=\s|$)/g, 'Transportation Center')
+    .replace(/\bSta\.?(?=\s|$)/gi, 'Station').replace(/\bSt\.(?=\s|$)/g, 'Street').replace(/\bAve\.?(?=\s|$)/gi, 'Avenue').replace(/\bRd\.?(?=\s|$)/gi, 'Road')
+    .replace(/\bJct\.?(?=\s|$)/gi, 'Junction').replace(/\bCtr\.?(?=\s|$)/gi, 'Center').replace(/\bPkwy\.?(?=\s|$)/gi, 'Parkway').replace(/\bMt\.?(?=\s)/gi, 'Mount')
+    .replace(/\bTerm\.?(?=\s|$)/gi, 'Terminal').replace(/\bTerms?\.?(?=\s|$)/gi, 'Terminals').replace(/\bIntl\.?(?=\s|$)/gi, 'International')
+    .replace(/\s*\/\s*/g, '-');
+}
 
 function colorDist(a: string, b: string): number {
   const p = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -294,14 +332,30 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
   const candidates = [...colourStats.entries()].filter(([c, s]) => s.len > 50 && c !== '#ffffff');
   const tol = opts.colorTolerance ?? 230;
   // Station label positions in SVG units, per station name.
+  const labelKey = (name: string) => normalizeName(expandAbbrev(name));
   const textPos = new Map<string, SvgExtract['texts'][number]>();
-  for (const t of ex.texts) { const k = normalizeName(t.name); if (k && !textPos.has(k)) textPos.set(k, t); }
+  for (const t of ex.texts) { const k = labelKey(t.name); if (k && !textPos.has(k)) textPos.set(k, t); }
   const markerPos = new Map<string, { x: number; y: number }>();
-  for (const mk of ex.markers) { const k = normalizeName(mk.name); if (k && !markerPos.has(k)) markerPos.set(k, mk); }
+  for (const mk of ex.markers) { const k = labelKey(mk.name); if (k && !markerPos.has(k)) markerPos.set(k, mk); }
+  const textKeys = [...textPos.keys()];
+  /** Exact key, else the best fuzzy candidate (prefix/containment on normalised names, 4+ chars). */
+  const findText = (st: { name: string; nameEn?: string }): SvgExtract['texts'][number] | undefined => {
+    const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), ...st.name.split(/ \/ /).map((n) => labelKey(n))].filter(Boolean);
+    for (const k of keys) { const t = textPos.get(k); if (t) return t; }
+    let best: { t: SvgExtract['texts'][number]; score: number } | undefined;
+    for (const k of keys) for (const tk of textKeys) {
+      if (tk.length < 4) continue;
+      let score = 0;
+      if (k.startsWith(tk) || tk.startsWith(k)) score = Math.min(k.length, tk.length) / Math.max(k.length, tk.length) + 0.5;
+      else if (k.includes(tk) || tk.includes(k)) score = Math.min(k.length, tk.length) / Math.max(k.length, tk.length);
+      if (score > 0.55 && (!best || score > best.score)) best = { t: textPos.get(tk)!, score };
+    }
+    return best?.t;
+  };
   const posOf = (st: { name: string; nameEn?: string }): Vec2 | undefined => {
-    const keys = [normalizeName(st.name), normalizeName(st.nameEn ?? ''), normalizeName(st.name.split(/ \/ /)[0])];
+    const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), labelKey(st.name.split(/ \/ /)[0])];
     for (const k of keys) { const mk = markerPos.get(k); if (mk) return [mk.x, mk.y]; }
-    for (const k of keys) { const t = textPos.get(k); if (t) return [t.x, t.y]; }
+    const t = findText(st); if (t) return [t.x, t.y];
     return undefined;
   };
   // A line gets the candidate colour (within tolerance) whose strokes run past the most of its stations.
@@ -335,8 +389,8 @@ export function layoutFromSvg(svgSource: string, net: MetroNetwork, params: Desi
 
   // Name → drawing position (label text or explicit marker), in mm.
   const drawingPos = (st: { name: string; nameEn?: string }): { x: number; y: number; source: 'marker' | 'text'; t?: SvgExtract['texts'][number] } | undefined => {
-    const keys = [normalizeName(st.name), normalizeName(st.nameEn ?? ''), normalizeName(st.name.split(/ \/ /)[0])];
-    const t = keys.map((k) => textPos.get(k)).find(Boolean);
+    const keys = [labelKey(st.name), labelKey(st.nameEn ?? ''), labelKey(st.name.split(/ \/ /)[0])];
+    const t = findText(st);
     for (const k of keys) { const mk = markerPos.get(k); if (mk) return { x: mk.x, y: mk.y, source: 'marker', t }; }
     if (t) return { x: t.x, y: t.y, source: 'text', t };
     return undefined;

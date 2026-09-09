@@ -256,6 +256,17 @@ export function straighten(graph: StationGraph, cell: number, rounds = 4, length
       const d = pointSegDist(n.pos, a.pos, b.pos);
       if (d < 0.8) cost += 3 * (0.8 - d + 0.1);
     }
+    // a line passing through this node should continue straight (official diagrams rarely bend at interchanges)
+    const inc = incident.get(n.id) ?? [];
+    const byLine = new Map<string, Corridor[]>();
+    for (const c of inc) for (const l of c.lines) (byLine.get(l) ?? byLine.set(l, []).get(l)!).push(c);
+    for (const cs of byLine.values()) {
+      if (cs.length !== 2) continue;
+      const other = (c: Corridor) => nodes.get(c.a === n.id ? c.b : c.a)!.pos;
+      const d1 = norm(sub(other(cs[0]), n.pos)), d2 = norm(sub(other(cs[1]), n.pos));
+      const straightness = -(d1[0] * d2[0] + d1[1] * d2[1]); // 1 = straight through, -1 = doubles back
+      cost += 0.6 * (1 - straightness) / 2;
+    }
     // corridors incident to n must not pass over other nodes
     for (const c of incident.get(n.id) ?? []) {
       const a = nodes.get(c.a)!, b = nodes.get(c.b)!;
