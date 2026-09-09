@@ -1,13 +1,13 @@
 # Philadelphia: our layout vs the operator's map
 
-Source drawing: `philadelphia.svg` · 900 mm wide · 280/524 stations placed on the official geometry · 276 labels placed, 73 moved away from where the drawing has them · 9 geometry problems.
+Source drawing: `philadelphia.svg` · 900 mm wide · 281/524 stations placed on the official geometry · 277 labels placed, 73 moved away from where the drawing has them · 10 geometry problems.
 
 ![side by side](screenshots/verify-philadelphia.png)
 
 | Line | Stations | On map | Off-line | Jumps | Our colour | Official colour | Missing from map |
 |---|---|---|---|---|---|---|---|
 | B SEPTA Broad Street Line | 24 | 22 | 1 | 0 | #f58220 | #f37324 | NRG, 8th & Market |
-| D D (D1–D2) | 50 | 45 | 0 | 0 | #dc2e6b | #5e9732 | Edgemont Street, Woodland Avenue, Springfield Road, Anderson Avenue, 69th Street Transportation Center West Terminal |
+| D D (D1–D2) | 50 | 46 | 0 | 0 | #dc2e6b | #5e9732 | Edgemont Street, Springfield Road, Anderson Avenue, 69th Street Transportation Center West Terminal |
 | G SEPTA 15 | 51 | 0 | 0 | 0 | #ffd700 | — | Girard Avenue & 63rd Street, Girard Avenue & 62nd Street, Girard Avenue & 61st Street, Girard Avenue & 60th Street, Girard Avenue & 59th Street, Girard Avenue & 57th Street, Girard Avenue & 56th Street, Girard Avenue & 54th Street … (+43) |
 | L SEPTA Market-Frankford Line | 28 | 27 | 2 | 0 | #0097d6 | #007dc3 | 69th Street Transportation Center |
 | M SEPTA Norristown High Speed Line | 22 | 21 | 2 | 0 | #5f249f | #781d7d | 69th Street Transportation Center |
@@ -38,31 +38,32 @@ Source drawing: `philadelphia.svg` · 900 mm wide · 280/524 stations placed on 
 * T: "15th Street" sits 14 mm off the T line (snapped to the wrong stroke?)
 * PATCO: "City Hall" is placed but no line piece passes through it (floating dot)
 * WTR: "Neshaminy Falls" is placed but no line piece passes through it (floating dot)
+* D: "MacDade Boulevard" is placed but no line piece passes through it (floating dot)
 
 ## Import log
 
-* line B: #f37324 (27% of 23 stations)
-* line D: #5e9732 (4% of 49 stations)
+* line B: #f37324 (29% of 23 stations)
+* line D: #5e9732 (20% of 49 stations)
 * line G: #ef3d42 (0% of 0 stations)
-* line L: #007dc3 (51% of 28 stations)
-* line M: #781d7d (23% of 22 stations)
-* line PATCO: #ef3d42 (65% of 11 stations)
-* line T: #5e9732 (35% of 22 stations)
-* line AIR: #3a6e8f (53% of 10 stations)
-* line CHE: #3a6e8f (81% of 14 stations)
-* line CHW: #3a6e8f (75% of 14 stations)
-* line CYN: #3a6e8f (73% of 6 stations)
-* line FOX: #3a6e8f (70% of 10 stations)
-* line LAN: #3a6e8f (24% of 26 stations)
-* line MED: #3a6e8f (74% of 19 stations)
-* line NOR: #3a6e8f (77% of 16 stations)
-* line PAO: #3a6e8f (51% of 26 stations)
-* line TRE: #3a6e8f (53% of 15 stations)
-* line WAR: #3a6e8f (66% of 16 stations)
-* line WTR: #3a6e8f (60% of 22 stations)
-* line WIL: #3a6e8f (24% of 22 stations)
+* line L: #007dc3 (59% of 28 stations)
+* line M: #781d7d (28% of 22 stations)
+* line PATCO: #ef3d42 (75% of 11 stations)
+* line T: #5e9732 (41% of 22 stations)
+* line AIR: #3a6e8f (57% of 10 stations)
+* line CHE: #3a6e8f (88% of 14 stations)
+* line CHW: #3a6e8f (81% of 14 stations)
+* line CYN: #3a6e8f (79% of 6 stations)
+* line FOX: #3a6e8f (76% of 10 stations)
+* line LAN: #3a6e8f (26% of 26 stations)
+* line MED: #3a6e8f (80% of 19 stations)
+* line NOR: #3a6e8f (83% of 16 stations)
+* line PAO: #3a6e8f (55% of 26 stations)
+* line TRE: #3a6e8f (57% of 15 stations)
+* line WAR: #3a6e8f (71% of 16 stations)
+* line WTR: #3a6e8f (65% of 22 stations)
+* line WIL: #3a6e8f (26% of 22 stations)
 * SVG import: "North Philadelphia" is drawn as 2 separate stations (73 mm apart); split
 * SVG import: "Radnor" is drawn as 2 separate stations (58 mm apart); split
 * SVG import: "Clifton-Aldan" is drawn as 2 separate stations (67 mm apart); split
 * SVG import: "Sharon Hill" is drawn as 2 separate stations (67 mm apart); split
-* SVG import: 280/524 stations matched, 6 line colours
+* SVG import: 281/524 stations matched, 6 line colours

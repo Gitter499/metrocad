@@ -17,17 +17,53 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 
 verification error: Cannot read properties of undefined (reading '0')
 
-### london
+### London Underground — Wikidata [Q20075](https://www.wikidata.org/wiki/Q20075)
 
-verification error: Wikidata SPARQL 502
+8 pass · 2 warn · 1 fail · 0 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| Bakerloo | 25 | 25 | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Bakerloo_Line.png) | ✅  |
+| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_line_%26_London_map.svg) | ✅  |
+| Circle | 35 | 36 | 37 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Circle_line_%26_London_map.svg) | ⚠️ station count 35 vs Wikipedia 36 |
+| District | 60 | 60 | 61 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:District_Line.svg) | ✅  |
+| Hammersmith & City | 29 | 29 | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Hammersmith_%26_City_Line_%26_London_map.svg) | ✅  |
+| Jubilee | 27 | 27 | 27 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Jubilee_Line.svg) | ✅  |
+| Metropolitan | 34 | 34 | 34 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Metropolitan_Line_%26_London_map.svg) | ✅  |
+| Northern | 52 | 2 |  | ✓ | ✓ |  | ❌ station count 52 vs Wikipedia 2 |
+| Piccadilly | 51 | 53 | 54 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Piccadilly_Line.svg) | ⚠️ station count 51 vs Wikipedia 53 |
+| Victoria | 16 | 16 | 17 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Victoria_Line.png) | ✅  |
+| Waterloo & City | 2 | 2 | 3 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Waterloo_%26_City_Line.svg) | ✅  |
 
 ### london.official
 
 verification error: Cannot read properties of undefined (reading '0')
 
-### moscow
+### Московский метрополитен — Wikidata [Moscow Metro](https://www.wikidata.org/wiki/Q5499)
 
-verification error: Wikidata SPARQL 502
+1 pass · 14 warn · 0 fail · 0 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | 27 | 27 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_1_(Moscow).svg) | ⚠️ termini: OSM [Бульвар Рокоссовского, Потапово] vs Wikidata [Potapovo, Bulvar Rokossovskogo] |
+| 2 | 24 | 24 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Line_2_(Moscow).svg) | ⚠️ termini: OSM [Алма-Атинская, Ховрино] vs Wikidata [Khovrino, Alma-Atinskaya]; colour #006400 vs #4dbe52 |
+| 3 | 22 | 22 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_3_(Moscow).svg) | ⚠️ termini: OSM [Щёлковская, Пятницкое шоссе] vs Wikidata [Shchyolkovskaya, Pyatnitskoye Shosse] |
+| 4 | 13 | 13 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Moscow_metro_map_line_4_Filyovskaya.svg) | ⚠️ termini: OSM [Боровицкая / Александровский сад / Библиотека имени Ленина, Москва-Сити, Кунцевская] vs Wikidata [Aleksandrovsky Sad, Kuntsevskaya] |
+| 5 | 12 | 12 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_5_(Moscow).svg) | ⚠️ termini: OSM [Белорусская] vs Wikidata [Belorusskaya, Krasnopresnenskaya] |
+| 6 | 24 | 24 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_6_(Moscow).svg) | ⚠️ termini: OSM [Медведково, Новоясеневская / Битцевский парк] vs Wikidata [Medvedkovo, Novoyasenevskaya] |
+| 7 | 23 | 23 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Line_7_(Moscow).svg) | ⚠️ termini: OSM [Планерная, Котельники] vs Wikidata [Kotelniki, Planernaya]; colour #ff00ff vs #89339e |
+| 8 | 8 |  |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_8-8A_(Moscow).svg) | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Третьяковская / Новокузнецкая, Новокосино] vs Wikidata [Aeroport Vnukovo, Novokosino] |
+| 8А | 14 |  |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_8A_(Moscow).svg) | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Аэропорт Внуково, Деловой Центр] vs Wikidata [Aeroport Vnukovo, Delovoy Tsentr] |
+| 9 | 25 | 25 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_9_(Moscow).svg) | ⚠️ termini: OSM [Алтуфьево, Бульвар Дмитрия Донского / Улица Старокачаловская] vs Wikidata [Bulvar Dmitriya Donskogo, Altufyevo] |
+| 10 | 26 | 26 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_10_(Moscow).svg) | ⚠️ termini: OSM [Физтех, Зябликово / Красногвардейская] vs Wikidata [Fiztekh, Zyablikovo] |
+| 11 | 29 | 29 |  |  | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_11_(Moscow).svg) | ✅  |
+| 12 | 7 | 7 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_12_(Moscow).svg) | ⚠️ termini: OSM [Бунинская аллея, Новоясеневская / Битцевский парк] vs Wikidata [Bittsevsky Park, Buninskaya Alleya] |
+| 15 | 8 | 8 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_15_(Moscow).svg) | ⚠️ termini: OSM [Некрасовка, Нижегородская] vs Wikidata [Nizhegorodskaya, Nekrasovka] |
+| 16 | 11 | 11 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_16_(Moscow).svg) | ⚠️ termini: OSM [Новомосковская, ЗИЛ] vs Wikidata [ZIL, Novomoskovskaya] |
+
+### moscow.official
+
+verification error: Cannot read properties of undefined (reading '0')
 
 ### Métro de Paris — Wikidata [Q50716](https://www.wikidata.org/wiki/Q50716)
 
@@ -97,6 +133,10 @@ verification error: Cannot read properties of undefined (reading '0')
 | Red | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | Silver | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 
+### pittsburgh.official
+
+verification error: Cannot read properties of undefined (reading '0')
+
 ### BART — Wikidata [Bay Area Rapid Transit](https://www.wikidata.org/wiki/Q610120)
 
 4 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-09
@@ -108,6 +148,10 @@ verification error: Cannot read properties of undefined (reading '0')
 | Orange | 21 | 21 | 2 | ✓ | ✓ |  | ✅  |
 | Red | 24 | 24 | 2 | ✓ | ✓ |  | ✅  |
 | Yellow | 27 | 28 | 4 | ✓ | ✓ |  | ⚠️ station count 27 vs Wikipedia 28 |
+
+### san-francisco.official
+
+verification error: Cannot read properties of undefined (reading '0')
 
 ### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
 
@@ -171,6 +215,10 @@ verification error: Cannot read properties of undefined (reading '0')
 | Y | 24 | 24 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroYurakucho.png) | ⚠️ termini: OSM [和光市, 新木場] vs Wikidata [Shin-Kiba Station, Wakōshi Station, Sumiyoshi Station] |
 | Z | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroHanzomon.png) | ⚠️ termini: OSM [渋谷, 押上〈スカイツリー前〉] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Oshiage Station] |
 
+### tokyo.official
+
+verification error: Cannot read properties of undefined (reading '0')
+
 ### VOR — Wikidata [Verkehrsverbund Ost-Region](https://www.wikidata.org/wiki/Q2516485)
 
 0 pass · 0 warn · 0 fail · 5 unmatched — 2026-09-09
@@ -182,3 +230,7 @@ verification error: Cannot read properties of undefined (reading '0')
 | U3 | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | U4 | 20 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | U6 | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+
+### vienna.official
+
+verification error: Cannot read properties of undefined (reading '0')
