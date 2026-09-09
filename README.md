@@ -45,16 +45,21 @@ The same geometry built as parts, in the app (`docs/screenshots/london/`): wall 
 
 ## Cities and their map sources
 
-Every bundled city is built on a real diagram, not on a generated layout, wherever a vector drawing with text exists. Sources are listed in `packages/core/official-sources.json` and refreshed by `node scripts/official-sync.mjs <city>` (download → convert → extract → verify), which the verify workflow runs for every city.
+Every bundled city is built on a real diagram, not on a generated layout. Sources are listed in `packages/core/official-sources.json` (several candidates per city are allowed; the one on which most stations land wins) and refreshed by `node scripts/official-sync.mjs <city>` (download → convert → extract → verify), which the verify workflow runs for every city on GitHub's runners (Wikimedia rate-limits shared IPs).
 
-| City | Geometry source | Publisher |
+| City | Geometry source | Stations placed |
 |---|---|---|
-| Philadelphia | Regional Rail & Rail Transit map, June 2026 (vector PDF) | SEPTA |
-| Paris | Plan schématique du réseau de Paris, July 2024 (SVG, CC BY-SA) | Wikimedia Commons, RATP-style |
-| London | Underground, Overground, DLR and Elizabeth line map (SVG, CC BY-SA) | Wikimedia Commons, TfL-style |
-| Atlanta, Moscow, Pittsburgh, Tokyo, Vienna, San Francisco | Community SVG diagrams (CC BY-SA); MARTA's official Ride Guide PDF carries its east-west labels as a raster image | Wikimedia Commons |
+| Philadelphia | SEPTA *Regional Rail & Rail Transit* map, June 2026 (official vector PDF) | 280 of 524 (the rest are trolley surface stops SEPTA's diagram omits) |
+| Paris | *Plan schématique du réseau de Paris*, July 2024 (Commons, CC BY-SA) | 308 of 321 |
+| London | Underground, Overground, DLR and Elizabeth line map (Commons, CC BY-SA) | 267 of 267 |
+| Moscow | Moscow Metro schematic by sameboat (Commons, CC BY-SA) | 220 of 220 |
+| Tokyo | *TokyoSubway Metro* (Commons, CC BY-SA) — Tokyo Metro and Toei | 215 of 221 |
+| Vienna | *U-Map Vienna* (Commons, CC BY-SA) | 98 of 99 |
+| Atlanta | MARTA rail map, simplified (Commons, CC BY-SA) | 41 of 43 |
+| San Francisco | *Bart-map* (Commons, CC BY-SA) — an older diagram: Warm Springs, Milpitas, Berryessa, Antioch and the OAK connector are not on it | 38 of 49 |
+| Pittsburgh | *Pittsburgh T* (Commons, CC BY-SA) — pre-Silver-line diagram; Silver runs on the Blue strokes | 37 of 51 |
 
-Operators whose own files could not be used: Tokyo Metro, RATP, Wiener Linien, Mosmetro and PRT either block automated downloads or publish raster/outlined-text PDFs; BART's site links no vector map.
+Operators whose own files could not be used: Tokyo Metro, RATP, Wiener Linien, Mosmetro and PRT either block automated downloads or publish raster/outlined-text PDFs; BART's and MARTA's official files carry their labels as raster or outlined text.
 
 ## Verification against the operator's map
 
