@@ -16,6 +16,15 @@ const CITY_NAMES = { philadelphia: 'Philadelphia', pittsburgh: 'Pittsburgh', atl
 const PLA_USD_PER_G = 0.022; // ≈ $22/kg
 // Assembly time model (minutes per part): place + press + check.
 const ASSEMBLY_MIN = { tile: 2.5, line: 1.5, dot: 0.25, ring: 0.5, plug: 0.35, labelPlate: 0.8, labelText: 0, tape: 0.5, tapeText: 0 };
+// One WASM instance per (city, width): a fresh manifold heap for every build keeps the big ones from running out of memory.
+if (!process.env.MATRIX_CHILD && cities.length * sizes.length > 1) {
+  const { spawnSync } = await import('node:child_process');
+  for (const city of cities) for (const width of sizes) {
+    const r = spawnSync(process.execPath, [process.argv[1], city], { stdio: 'inherit', env: { ...process.env, MATRIX_CHILD: '1', SIZES: String(width) } });
+    if (r.status) console.log(`${city} ${width}mm: failed (exit ${r.status})`);
+  }
+  process.exit(0);
+}
 const font = TextFont.fromBuffer(fs.readFileSync('packages/core/fonts/Inter-Bold.ttf'));
 const wasm = await Module(); wasm.setup();
 fs.mkdirSync('docs/matrix', { recursive: true });

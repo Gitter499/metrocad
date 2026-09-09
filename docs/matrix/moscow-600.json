@@ -25,11 +25,11 @@
   "costUsd": 15.1,
   "printHours": 59.7,
   "farms": {
-    "1 × A1 mini": 64.3,
+    "1 × A1 mini": 64.4,
     "3 × A1 mini": 21.4,
     "3 × A1 mini + 1 × S3": 17.1,
     "9 × A1 mini + 2 × S3": 6.3
   },
   "assemblyHours": 7.9,
-  "buildSec": 71
+  "buildSec": 77
 }

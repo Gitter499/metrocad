@@ -21,15 +21,15 @@
   "plates": 23,
   "tiles": "20",
   "baseAreaPct": 11,
-  "grams": 345,
-  "costUsd": 7.59,
-  "printHours": 29.2,
+  "grams": 346,
+  "costUsd": 7.61,
+  "printHours": 29.3,
   "farms": {
     "1 × A1 mini": 32.2,
     "3 × A1 mini": 10.8,
-    "3 × A1 mini + 1 × S3": 8.4,
+    "3 × A1 mini + 1 × S3": 8.5,
     "9 × A1 mini + 2 × S3": 3.2
   },
   "assemblyHours": 3.6,
-  "buildSec": 25
+  "buildSec": 23
 }
