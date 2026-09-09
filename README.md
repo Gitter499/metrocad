@@ -27,7 +27,9 @@ Algorithms can only produce a map *in the style of* a transit diagram. To get th
 
 * **Auto**: for known cities the app fetches the Commons schematic (currently London: *London Underground, Overground, DLR and Elizabeth line map*, CC BY-SA). Add more in `KNOWN_MAP_SVGS`.
 * **My SVG**: upload any official SVG (or `--map-svg file.svg` on the CLI). Operators often publish their diagrams as SVG/PDF; a PDF can be converted with Inkscape.
-* **Generated layout**: the algorithmic fallback (semi-geographic, octilinear or geographic) for cities without a drawing.
+* **Generated layout**: the algorithmic fallback for cities without a drawing. *Auto* picks strict octilinear for small networks (≤ 6 lines — the way SEPTA, PRT and most US operators draw theirs, horizontals/verticals preferred, diagonals only for genuinely diagonal runs) and semi-geographic for big ones (Paris-style).
+
+Philadelphia and Pittsburgh: Wikimedia Commons has no vector schematic of SEPTA Metro or the Pittsburgh T (only a regional map and a PNG), so the bundled renders use the octilinear generator. SEPTA and PRT publish their official diagrams as PDF; open the PDF in Inkscape, save as SVG, and load it with **Official map → My SVG file** (or `--map-svg`) to get the exact official geometry.
 
 | Source drawing (Commons) | MetroCAD import (all 267 stations, 11 lines matched) |
 |---|---|
