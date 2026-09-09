@@ -43,6 +43,19 @@ The same geometry built as parts, in the app (`docs/screenshots/london/`): wall 
 | ![wall](docs/screenshots/london/01-wall-angle.png) | ![close-up](docs/screenshots/london/03-wall-closeup.png) |
 | ![beds](docs/screenshots/london/05-print-beds.png) | ![assemble](docs/screenshots/london/07-assemble.png) |
 
+## Cities and their map sources
+
+Every bundled city is built on a real diagram, not on a generated layout, wherever a vector drawing with text exists. Sources are listed in `packages/core/official-sources.json` and refreshed by `node scripts/official-sync.mjs <city>` (download → convert → extract → verify), which the verify workflow runs for every city.
+
+| City | Geometry source | Publisher |
+|---|---|---|
+| Philadelphia | Regional Rail & Rail Transit map, June 2026 (vector PDF) | SEPTA |
+| Paris | Plan schématique du réseau de Paris, July 2024 (SVG, CC BY-SA) | Wikimedia Commons, RATP-style |
+| London | Underground, Overground, DLR and Elizabeth line map (SVG, CC BY-SA) | Wikimedia Commons, TfL-style |
+| Atlanta, Moscow, Pittsburgh, Tokyo, Vienna, San Francisco | Community SVG diagrams (CC BY-SA); MARTA's official Ride Guide PDF carries its east-west labels as a raster image | Wikimedia Commons |
+
+Operators whose own files could not be used: Tokyo Metro, RATP, Wiener Linien, Mosmetro and PRT either block automated downloads or publish raster/outlined-text PDFs; BART's site links no vector map.
+
 ## Verification against the operator's map
 
 Facts alone (station counts, termini, colour codes) let a wrong-looking map pass, so there is a second check that compares *appearance*. `scripts/verify-official.mjs city official.svg official.png` places our stations on the operator's drawing and reports every station missing from the map, every station sitting off its line, every label moved away from where the drawing has it, every implausible jump between neighbours, and our colour next to the official one per line — plus a side-by-side image, official raster left and our render right:
