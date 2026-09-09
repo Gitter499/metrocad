@@ -1,0 +1,23 @@
+{
+  "name": "metrocad-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Turn any city's metro map into color-ready 3D-printable wall art (STL/3MF), with 3D + AR previews.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @metrocad/core && npm run build -w @metrocad/cli && npm run build -w @metrocad/web",
+    "test": "npm run test -w @metrocad/core",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "npm run dev -w @metrocad/web",
+    "cli": "node packages/cli/bin/metrocad.js",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
