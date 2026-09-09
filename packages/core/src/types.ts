@@ -70,8 +70,10 @@ export interface LayoutStation {
   lines: string[];
   /** Big marker (interchange/junction) vs. small dot on a single line. */
   major: boolean;
-  /** Per-line centreline point where the line actually passes this station (offset for parallel lines). */
-  linePoints: Record<string, Vec2>;
+  /** Points covered by the station marker (line end/through points at this station). Regular stations: one point. */
+  markerPoints: Vec2[];
+  /** Marker outline (mm) used for pockets, rings and collision tests. */
+  markerRadius: number;
 }
 
 export interface LayoutLine {
@@ -84,13 +86,17 @@ export interface LayoutLine {
 }
 
 export interface LayoutChain {
-  /** Polyline in mm. */
+  id: string;
+  /** Smoothed centreline polyline in mm. */
   points: Vec2[];
-  /** Station ids at the chain's two ends (may be undefined for artificial cuts). */
+  /** How each end terminates: inside a station marker, or a straight cut (bed split). */
+  startEnd: 'station' | 'cut';
+  endEnd: 'station' | 'cut';
   startStation?: string;
   endStation?: string;
-  /** Regular stations that lie along the chain as holes (id -> point). */
+  /** Regular stations that lie along the chain (holes for their dots). */
   throughStations: { id: string; point: Vec2 }[];
+  corridorId: string;
 }
 
 export interface LayoutLabel {
@@ -105,6 +111,8 @@ export interface LayoutLabel {
   angle: number;
   /** Font size (em) in mm. */
   fontSize: number;
+  /** Baseline origin of the text inside the box (box-local, before rotation). */
+  textOrigin: Vec2;
 }
 
 export interface MapLayout {

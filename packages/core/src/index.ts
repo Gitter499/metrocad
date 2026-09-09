@@ -1,3 +1,11 @@
 export * from './types.js';
 export * from './osm.js';
 export * from './network.js';
+export * from './defaults.js';
+export * from './text.js';
+export * from './svg.js';
+export * from './layout/index.js';
+export * from './layout/graph.js';
+export * from './layout/route.js';
+export * from './layout/labels.js';
+export * as vec from './vec.js';
