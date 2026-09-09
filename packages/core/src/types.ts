@@ -196,6 +196,10 @@ export interface DesignParams {
   tapeWidth: number;
   /** Engrave piece IDs on the underside of tiles, line pieces and label plates. */
   engraveIds: boolean;
+  /** Friction lugs on part feet so pieces snap into grooves/pockets without glue. */
+  snapFit: boolean;
+  /** Interference per side (mm) of the lugs beyond the nominal clearance. */
+  snapInterference: number;
 
   colors: {
     base: Hex;

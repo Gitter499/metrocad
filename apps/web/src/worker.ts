@@ -7,7 +7,7 @@ import parisUrl from '@metrocad/core/fixtures/paris.json?url';
 import londonUrl from '@metrocad/core/fixtures/london.json?url';
 import {
   fetchCityNetwork, buildFromNetwork, buildBundle, zipBundle, TextFont, renderSvg, partsToGlb, partsToUsdz,
-  slugify, type FullBuildResult, type MetroNetwork,
+  slugify, sliceAndSchedule, buildAssemblyPlan, renderAssemblyPlanSvg, type FullBuildResult, type MetroNetwork, type FarmResult, type Part,
 } from '@metrocad/core';
 import type { ToWorker, FromWorker, DisplayPart } from './protocol.js';
 
@@ -18,6 +18,7 @@ let font: TextFont | undefined;
 let fontBytes: Uint8Array | undefined;
 let current: FullBuildResult | undefined;
 let currentCity = '';
+let currentSliced: FarmResult | undefined;
 
 const post = (m: FromWorker, transfer: Transferable[] = []) => (self as any).postMessage(m, transfer);
 
@@ -53,7 +54,8 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
         params: msg.params, font: font!, manifold: manifold!,
         progress: (stage, fraction, detail) => post({ type: 'status', id, stage, fraction, detail }),
       });
-      const parts: DisplayPart[] = current.parts.map((p) => ({ id: p.id, name: p.name, kind: p.kind, color: p.color, colorName: p.colorName, mesh: p.previewMesh ?? p.mesh, bbox: p.bbox }));
+      currentSliced = undefined;
+      const parts: DisplayPart[] = current.parts.map((p) => ({ id: p.id, name: p.name, kind: p.kind, color: p.color, colorName: p.colorName, mesh: p.previewMesh ?? p.mesh, bbox: p.bbox, tag: p.tag, group: p.group, lineId: p.lineId, stationId: p.stationId }));
       const transfer: Transferable[] = [];
       // Copy buffers so the worker keeps its originals for export.
       const copies = parts.map((p) => ({ ...p, mesh: { positions: p.mesh.positions.slice(), indices: p.mesh.indices.slice() } }));
@@ -64,7 +66,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
     } else if (msg.type === 'bundle') {
       if (!current) throw new Error('Nothing built yet');
       const files = buildBundle(current, {
-        individualStls: msg.individualStls, ar: true,
+        individualStls: msg.individualStls, ar: true, sliced: currentSliced,
         fontDataUrl: fontBytes ? 'data:font/ttf;base64,' + b64(fontBytes) : undefined,
         onProgress: (f, d) => post({ type: 'status', id, stage: 'export', fraction: f, detail: d }),
       });
@@ -81,26 +83,27 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       post({ type: 'ar', id, glb, usdz }, [glb.buffer, usdz.buffer]);
     } else if (msg.type === 'slice') {
       if (!current) throw new Error('Nothing built yet');
-      const core: any = await import('@metrocad/core');
-      const printer = core.getPrinterProfile(msg.printerId);
-      const process = core.processFor(printer);
+      const res = sliceAndSchedule(current, manifold!, { changeoverMin: msg.changeoverMin, onProgress: (f, d) => post({ type: 'status', id, stage: 'slice', fraction: f, detail: d }) });
+      currentSliced = res;
       const files: Record<string, Uint8Array> = {};
-      const out: any[] = [];
-      let totalSec = 0, totalGrams = 0;
-      current.plates.forEach((plate, i) => {
-        post({ type: 'status', id, stage: 'slice', fraction: i / current!.plates.length, detail: `Slicing ${plate.name}` });
-        const objects = plate.items.flatMap((item) => {
-          const bb = core.itemBBox(current!.parts, item.partId);
-          return bb.parts.map((p: any) => ({ mesh: p.mesh, transform: core.placementTransform(item, bb.min[2]), name: p.name, colorChangeAtZ: plate.colorChange && p.kind === 'labelText' ? plate.colorChange.atZ : undefined }));
-        });
-        const res = core.slicePlate({ objects, printer, process, label: plate.name }, manifold);
-        const n = String(i + 1).padStart(2, '0');
-        files[`${n}-${slugify(plate.name)}${printer.gcodeExtension}`] = new TextEncoder().encode(res.gcode);
-        out.push({ id: plate.id, name: plate.name, color: plate.color, colorName: plate.colorName, timeSec: res.stats.timeSec, filamentGrams: res.stats.filamentGrams, layers: res.stats.layers, gcodeBytes: res.gcode.length });
-        totalSec += res.stats.timeSec; totalGrams += res.stats.filamentGrams;
-      });
+      res.plates.forEach((sp, i) => { files[`${slugify(sp.printerId)}/${String(i + 1).padStart(2, '0')}-${slugify(sp.name)}.gcode`] = new TextEncoder().encode(sp.gcode); });
       const zip = zipBundle(files);
-      post({ type: 'sliced', id, printerId: msg.printerId, plates: out, totalSec, totalGrams, zip }, [zip.buffer]);
+      post({ type: 'sliced', id, plates: res.plates.map((p) => ({ id: p.plateId, name: p.name, color: p.color, colorName: p.colorName, timeSec: p.timeSec, filamentGrams: p.stats.filamentGrams, layers: p.stats.layers, printer: p.printerName, printerId: p.printerId })), totalSec: res.totalSec, totalGrams: res.totalGrams, makespanSec: res.schedule.makespanSec, perPrinter: res.schedule.perPrinter.map((p) => ({ printer: p.printer, busySec: p.busySec, jobs: p.jobs })), zip }, [zip.buffer]);
+    } else if (msg.type === 'assembly') {
+      if (!current) throw new Error('Nothing built yet');
+      const plan = buildAssemblyPlan(current);
+      post({ type: 'assembly', id, plan, planSvg: renderAssemblyPlanSvg(current, plan, { fontDataUrl: fontBytes ? 'data:font/ttf;base64,' + b64(fontBytes) : undefined }) });
+    } else if (msg.type === 'stepAr') {
+      if (!current) throw new Error('Nothing built yet');
+      // Ghosted tiles + the step's pieces in full colour, so the phone shows exactly where they go.
+      const plan = buildAssemblyPlan(current);
+      const step = plan.steps.find((st) => st.id === msg.stepId);
+      const ids = new Set(step?.pieces.map((p) => p.partId) ?? []);
+      const parts: Part[] = current.parts.filter((p) => p.kind === 'tile' || ids.has(p.id) || (p.group && ids.has(p.group))).map((p) => (p.kind === 'tile' && msg.stepId !== 'tiles') ? { ...p, color: '#6b6b70' } : p);
+      const bounds = { width: current.layout.width, height: current.layout.height };
+      const glb = partsToGlb(parts, { bounds });
+      const usdz = partsToUsdz(parts, { bounds, anchoring: 'wall' });
+      post({ type: 'stepAr', id, stepId: msg.stepId, glb, usdz }, [glb.buffer, usdz.buffer]);
     }
   } catch (e: any) {
     post({ type: 'error', id, message: e?.message ?? String(e) });

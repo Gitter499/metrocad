@@ -32,6 +32,8 @@ export const DEFAULT_PARAMS: DesignParams = {
   labelMode: 'auto',
   tapeWidth: 12,
   engraveIds: true,
+  snapFit: true,
+  snapInterference: 0.1,
 
   colors: {
     base: '#1c1c1e',

@@ -93,6 +93,22 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
   const track: CrossSection[] = [];
   const keep = <T extends CrossSection>(cs: T): T => { track.push(cs); return cs; };
 
+  /**
+   * Snap-fit foot: widen the bottom `h` mm of a part by (clearance + interference) so it presses into
+   * its groove/pocket. `keepCS` limits the lug to given strips (line pieces) — undefined means all around.
+   */
+  const lugOut = clr + params.snapInterference;
+  const addFoot = (man: Manifold, cs: CrossSection, zBottom: number, h: number, strips?: CrossSection): Manifold => {
+    if (!params.snapFit || lugOut <= 0) return man;
+    let foot = cs.offset(lugOut, 'Round');
+    if (strips) { const f2 = foot.intersect(strips); foot.delete(); foot = f2; }
+    if (foot.area() < 0.01) { foot.delete(); return man; }
+    const solid = foot.extrude(h).translate([0, 0, zBottom]);
+    const out = man.add(solid);
+    foot.delete(); solid.delete(); man.delete();
+    return out;
+  };
+
   /* ---------- station marker shapes ---------- */
   const rDot = (params.lineWidth * params.dotFactor) / 2;
   const rMajor = params.lineWidth * 0.5 + params.ringWidth + 0.4;
@@ -205,6 +221,34 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     let best = 0, bi = 0;
     for (let k = 0; k + 1 < pts.length; k++) { const d = dist(pts[k], pts[k + 1]); if (d > best) { best = d; bi = k; } }
     let man = chainM[i];
+    // Snap lugs: three short strips along the piece (avoiding the ends), only in the groove zone.
+    if (params.snapFit) {
+      const L = pts.reduce((acc, q, k) => (k ? acc + dist(pts[k - 1], q) : 0), 0);
+      const strips: CrossSection[] = [];
+      const nLugs = L > 60 ? 3 : L > 25 ? 2 : 1;
+      for (let k = 0; k < nLugs; k++) {
+        const sAt = L * (nLugs === 1 ? 0.5 : 0.2 + (0.6 * k) / (nLugs - 1));
+        let acc = 0;
+        for (let q = 0; q + 1 < pts.length; q++) {
+          const d = dist(pts[q], pts[q + 1]);
+          if (acc + d >= sAt) {
+            const tt = (sAt - acc) / Math.max(d, 1e-9);
+            const centre: Vec2 = [pts[q][0] + (pts[q + 1][0] - pts[q][0]) * tt, pts[q][1] + (pts[q + 1][1] - pts[q][1]) * tt];
+            const ang = (angleOf(sub(pts[q + 1], pts[q])) * 180) / Math.PI;
+            const sq = CrossSection.square([5, params.lineWidth * 3], true);
+            const rs = sq.rotate(ang); sq.delete();
+            strips.push(rs.translate(centre)); rs.delete();
+            break;
+          }
+          acc += d;
+        }
+      }
+      if (strips.length) {
+        const stripU = CrossSection.union(strips); strips.forEach((x) => x.delete());
+        man = addFoot(man, c.cs, z.grooveFloor, params.grooveDepth - 0.3, stripU);
+        stripU.delete();
+      }
+    }
     if (best > tag.length * params.lineWidth * 0.45 + 6) {
       const mid: Vec2 = [(pts[bi][0] + pts[bi + 1][0]) / 2, (pts[bi][1] + pts[bi + 1][1]) / 2];
       const ang = angleOf(sub(pts[bi + 1], pts[bi]));
@@ -227,13 +271,17 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
       const inner = mk.offset(-params.ringWidth, 'Round');
       const ring = mk.subtract(inner);
       const plugCS = inner.offset(-clr, 'Round');
-      const ringM = ring.extrude(markerH).translate([0, 0, z.pocketFloor]);
-      const plugM = plugCS.extrude(markerH).translate([0, 0, z.pocketFloor]);
+      let ringM = ring.extrude(markerH).translate([0, 0, z.pocketFloor]);
+      let plugM = plugCS.extrude(markerH).translate([0, 0, z.pocketFloor]);
+      // Press-fit feet: the ring's outer wall against the pocket, the plug against the ring.
+      { const outer = ring.offset(lugOut, 'Round'); const innerHole = inner.offset(0, 'Round'); const footCS = outer.subtract(innerHole); ringM = addFoot(ringM, footCS, z.pocketFloor, 1.0); outer.delete(); innerHole.delete(); footCS.delete(); }
+      plugM = addFoot(plugM, plugCS, z.pocketFloor, 1.0);
       pushPart(ringM, { id: `ring-${st.id}`, name: `${st.name} ring`, kind: 'ring', color: params.colors.ring, colorName: 'Ring', stationId: st.id, tag: `S${String(si + 1).padStart(3, '0')}` });
       pushPart(plugM, { id: `plug-${st.id}`, name: `${st.name} plug`, kind: 'plug', color: params.colors.plug, colorName: 'Station', stationId: st.id, tag: `S${String(si + 1).padStart(3, '0')}` });
       inner.delete(); ring.delete(); plugCS.delete();
     } else {
-      const dotM = mk.extrude(markerH).translate([0, 0, z.pocketFloor]);
+      let dotM = mk.extrude(markerH).translate([0, 0, z.pocketFloor]);
+      dotM = addFoot(dotM, mk, z.pocketFloor, 1.0);
       pushPart(dotM, { id: `dot-${st.id}`, name: `${st.name} dot`, kind: 'dot', color: params.colors.dot, colorName: 'Station', stationId: st.id, tag: `S${String(si + 1).padStart(3, '0')}` });
     }
   }
@@ -271,6 +319,7 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     const clipped = text.intersect(inset); text.delete(); inset.delete(); text = clipped;
     if (text.area() < 0.05) { text.delete(); plateP.delete(); warnings.push(`Label "${lb.text}" produced no glyph geometry`); continue; }
     let plateM = plateP.extrude(plateH).translate([0, 0, z.labelPocketFloor]);
+    plateM = addFoot(plateM, plateP, z.labelPocketFloor, Math.min(0.6, plateH - 0.2));
     const tagText = `N${String(lb.n).padStart(3, '0')}`;
     const t2 = (lb.angle * Math.PI) / 180;
     const plateCentre = place([lb.width / 2, lb.height / 2]);

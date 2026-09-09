@@ -1,0 +1,30 @@
+name: Verify networks against Wikidata
+on:
+  push:
+    paths: ['packages/core/fixtures/**', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'scripts/verify-web.mjs']
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build -w @metrocad/core
+      - run: node scripts/verify.mjs paris && node scripts/verify.mjs london
+      - run: node scripts/verify-web.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: verification-report, path: docs/verification.md }
+      - name: Commit report
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "metrocad-verify[bot]"
+          git config user.email "verify@metrocad.local"
+          git add docs/verification.md
+          git diff --cached --quiet || git commit -m "docs: refresh Wikidata verification report" && git push

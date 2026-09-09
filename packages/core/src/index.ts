@@ -20,3 +20,4 @@ export * from './bundle.js';
 export * from './slicer/index.js';
 export * from './farm.js';
 export * from './assembly.js';
+export * from './verify.js';

@@ -80,3 +80,24 @@ table.tbl td.n { text-align: right; font-variant-numeric: tabular-nums; }
   .brand .t { display: none; }
   .topright { display: none; }
 }
+
+.assemble { position: absolute; left: 372px; right: 22px; top: 84px; bottom: 22px; display: grid; grid-template-columns: 300px 1fr; gap: 14px; z-index: 3; }
+.assemble .steps { padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.assemble .steps button { text-align: left; border: none; background: transparent; font: inherit; font-size: 13px; font-weight: 600; padding: 9px 10px; border-radius: 10px; cursor: pointer; color: var(--ink); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.assemble .steps button:hover, .assemble .steps button.active { background: rgba(255,255,255,0.85); }
+.assemble .steps button .n { font-weight: 500; }
+.assemble .main { position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.assemble .main .hdr { padding: 14px 16px 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.assemble .main .hdr h3 { margin: 0; font-size: 16px; flex: 1; }
+.assemble .main .hint { padding: 0 16px 10px; font-size: 13px; font-weight: 500; }
+.assemble .main .plan { flex: 1; overflow: auto; padding: 0 16px 16px; }
+.assemble .main .plan svg { width: 100%; height: auto; display: block; border-radius: 12px; background: #fff; }
+.assemble .finder { display: flex; gap: 6px; align-items: center; }
+.assemble .finder input { width: 120px; font-size: 13px; padding: 7px 10px; border-radius: 10px; }
+.chk { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; padding: 0 16px 12px; max-height: 120px; overflow: auto; }
+.chk label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.6); border-radius: 8px; padding: 4px 6px; }
+.chk label.done { opacity: 0.45; text-decoration: line-through; }
+.chk input { width: 14px; height: 14px; }
+.hl { outline: 3px solid #0a84ff; outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 1100px) { .assemble { grid-template-columns: 1fr; left: 22px; } .assemble .steps { max-height: 160px; } }
+@media (max-width: 860px) { .assemble { top: 84px; bottom: 54vh; } }
