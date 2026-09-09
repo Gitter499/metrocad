@@ -13,14 +13,17 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(p).pipe(res);
 });
 await new Promise((r) => server.listen(4174, r));
-const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } : undefined;
+const proxy = undefined;
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'], proxy });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, ignoreHTTPSErrors: true });
 page.setDefaultTimeout(240000);
 page.on('console', (m) => { if (m.type() === 'error') console.log('[console]', m.text().slice(0, 200)); });
 await page.goto('http://localhost:4174/#nostart', { waitUntil: 'load' });
 await page.fill('#city', 'London');
-await page.selectOption('#officialMap', 'auto');
+// Use the upload path with the Commons SVG saved locally (the sandbox cannot reach upload.wikimedia.org from Chromium).
+await page.selectOption('#officialMap', 'custom');
+await page.setInputFiles('#mapFile', process.env.MAP_SVG ?? 'docs/official/london.svg');
+await page.waitForTimeout(500);
 await page.evaluate(() => document.querySelector('.chip[data-city="London"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
 await page.waitForFunction(() => document.getElementById('results')?.style.display === '', null, { timeout: 240000 });
 console.log('status:', await page.textContent('#status'));

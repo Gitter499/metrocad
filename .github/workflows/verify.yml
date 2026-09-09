@@ -1,7 +1,7 @@
 name: Verify networks against Wikidata
 on:
   push:
-    paths: ['packages/core/fixtures/**', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'scripts/verify-web.mjs']
+    paths: ['packages/core/fixtures/**', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'scripts/verify-web.mjs', '.github/workflows/verify.yml']
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
@@ -29,5 +29,5 @@ jobs:
           git add docs/verification.md
           git diff --cached --quiet && exit 0
           git commit -m "docs: refresh Wikidata verification report"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"
