@@ -13,6 +13,11 @@ export interface ForceOptions {
   seed: number;
   /** Corridor target length: hops^exponent (compresses long suburban chains). */
   lengthExponent: number;
+  /** Constant pull towards the (fisheye) geographic position. */
+  anchor: number;
+  /** Corridor length may not shrink below fidelityMin × or grow beyond fidelityMax × its geographic length. */
+  fidelityMin: number;
+  fidelityMax: number;
 }
 
 const OCT = Math.PI / 4;
@@ -66,6 +71,15 @@ export function layoutReducedGraph(graph: StationGraph, opts: ForceOptions): voi
   normalizeScale(majors, corridors, targetLen, nodes);
   const anchor = new Map<string, Vec2>();
   for (const n of majors) anchor.set(n.id, [...n.pos] as Vec2);
+  // Official diagrams keep proportions roughly geographic: a corridor may shrink/stretch only so far
+  // from its (fisheye) geographic length. This is what keeps line 1 in Paris straight west–east.
+  const geoLen = new Map<string, number>();
+  for (const c of corridors) geoLen.set(c.id, dist(nodes.get(c.a)!.pos, nodes.get(c.b)!.pos));
+  const targetLenClamped = (c: Corridor) => {
+    const g = geoLen.get(c.id) ?? 1;
+    const t = targetLen(c);
+    return Math.max(t, Math.min(Math.max(t, g * opts.fidelityMin), g * opts.fidelityMax));
+  };
 
   const random = rng(opts.seed);
   for (const n of majors) n.pos = add(n.pos, [(random() - 0.5) * 0.01, (random() - 0.5) * 0.01]);
@@ -80,9 +94,9 @@ export function layoutReducedGraph(graph: StationGraph, opts: ForceOptions): voi
   for (let it = 0; it < iters; it++) {
     const t = it / iters;
     const temp = 0.35 * (1 - t) + 0.03;                 // step size
-    const wOct = S * (0.15 + 1.2 * t);                   // octilinear grows over time
+    const wOct = S * (0.15 + 0.9 * t);                   // octilinear grows over time
     const wLen = 0.5;
-    const wAnchor = (1 - S) * 0.15 + 0.02 * (1 - t);    // geography fades
+    const wAnchor = (1 - S) * 0.15 + opts.anchor * (1 - 0.5 * t);   // geography keeps pulling
     for (const d of disp) { d[0] = 0; d[1] = 0; }
 
     // Corridor springs: length + octilinear direction
@@ -92,7 +106,7 @@ export function layoutReducedGraph(graph: StationGraph, opts: ForceOptions): voi
       const d = sub(b.pos, a.pos);
       const L = len(d);
       if (L < 1e-9) continue;
-      const T = targetLen(c);
+      const T = targetLenClamped(c);
       const dir = norm(d);
       // length
       const f = (L - T) * wLen;

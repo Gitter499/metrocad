@@ -47,7 +47,7 @@ export const DEFAULT_PARAMS: DesignParams = {
   layout: {
     mode: 'schematic',
     schematicStrength: 1,
-    fisheye: 0.35,
+    fisheye: 0.55,
     minSpacing: 1,
     iterations: 500,
     seed: 7,

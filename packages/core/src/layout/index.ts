@@ -44,8 +44,8 @@ export function computeLayout(net: MetroNetwork, params: DesignParams, font: Tex
   const graph = buildStationGraph(net);
   const lo = params.layout;
   const strength = lo.mode === 'geographic' ? 0 : lo.schematicStrength;
-  layoutReducedGraph(graph, { strength, fisheye: lo.fisheye, iterations: lo.iterations, seed: lo.seed, lengthExponent: 0.75 });
-  if (strength > 0.5) { snapToGrid(graph, 1); straighten(graph, 1, 6); }
+  layoutReducedGraph(graph, { strength, fisheye: lo.fisheye, iterations: lo.iterations, seed: lo.seed, lengthExponent: 0.8, anchor: 0.12, fidelityMin: 0.6, fidelityMax: 1.7 });
+  if (strength > 0.5) { snapToGrid(graph, 1); straighten(graph, 1, 4); }
 
   // Regular (interior) stations: positions come from corridor paths later.
   const majors = [...graph.nodes.values()].filter((n) => n.major);

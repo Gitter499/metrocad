@@ -1,0 +1,10 @@
+import { computeLayout, withDefaults, renderSvg, TextFont } from '@metrocad/core';
+import fs from 'node:fs';
+const [name, out, widthArg, fe] = process.argv.slice(2);
+const net = JSON.parse(fs.readFileSync(`packages/core/fixtures/${name}.json`, 'utf8'));
+const fontBuf = fs.readFileSync('packages/core/fonts/Inter-Bold.ttf');
+const font = TextFont.fromBuffer(fontBuf);
+const params = withDefaults({ widthMm: Number(widthArg), layout: { fisheye: Number(fe) } });
+const layout = computeLayout(net, params, font);
+console.log(`${name} fisheye ${fe}: ${layout.width}x${layout.height.toFixed(0)} labels ${layout.labels.length}/${layout.stations.length} unit ${layout.scale.toFixed(1)}`);
+fs.writeFileSync(out, renderSvg(layout, params, { fontDataUrl: 'data:font/ttf;base64,' + fontBuf.toString('base64') }));
