@@ -31,6 +31,28 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | Victoria | 16 | 16 | 17 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Victoria_Line.png) | ✅  |
 | Waterloo & City | 2 | 2 | 3 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Waterloo_%26_City_Line.svg) | ✅  |
 
+### Московский метрополитен — Wikidata [Moscow Metro](https://www.wikidata.org/wiki/Q5499)
+
+1 pass · 14 warn · 0 fail · 0 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | 27 | 27 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_1_(Moscow).svg) | ⚠️ termini: OSM [Бульвар Рокоссовского, Потапово] vs Wikidata [Potapovo, Bulvar Rokossovskogo] |
+| 2 | 24 | 24 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Line_2_(Moscow).svg) | ⚠️ termini: OSM [Алма-Атинская, Ховрино] vs Wikidata [Khovrino, Alma-Atinskaya]; colour #006400 vs #4dbe52 |
+| 3 | 22 | 22 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_3_(Moscow).svg) | ⚠️ termini: OSM [Щёлковская, Пятницкое шоссе] vs Wikidata [Shchyolkovskaya, Pyatnitskoye Shosse] |
+| 4 | 13 | 13 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Moscow_metro_map_line_4_Filyovskaya.svg) | ⚠️ termini: OSM [Боровицкая / Александровский сад / Библиотека имени Ленина, Москва-Сити, Кунцевская] vs Wikidata [Aleksandrovsky Sad, Kuntsevskaya] |
+| 5 | 12 | 12 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_5_(Moscow).svg) | ⚠️ termini: OSM [Белорусская] vs Wikidata [Belorusskaya, Krasnopresnenskaya] |
+| 6 | 24 | 24 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_6_(Moscow).svg) | ⚠️ termini: OSM [Медведково, Новоясеневская / Битцевский парк] vs Wikidata [Medvedkovo, Novoyasenevskaya] |
+| 7 | 23 | 23 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Line_7_(Moscow).svg) | ⚠️ termini: OSM [Планерная, Котельники] vs Wikidata [Kotelniki, Planernaya]; colour #ff00ff vs #89339e |
+| 8 | 8 |  |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_8-8A_(Moscow).svg) | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Третьяковская / Новокузнецкая, Новокосино] vs Wikidata [Aeroport Vnukovo, Novokosino] |
+| 8А | 14 |  |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_8A_(Moscow).svg) | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Аэропорт Внуково, Деловой Центр] vs Wikidata [Aeroport Vnukovo, Delovoy Tsentr] |
+| 9 | 25 | 25 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_9_(Moscow).svg) | ⚠️ termini: OSM [Алтуфьево, Бульвар Дмитрия Донского / Улица Старокачаловская] vs Wikidata [Bulvar Dmitriya Donskogo, Altufyevo] |
+| 10 | 26 | 26 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_10_(Moscow).svg) | ⚠️ termini: OSM [Физтех, Зябликово / Красногвардейская] vs Wikidata [Fiztekh, Zyablikovo] |
+| 11 | 29 | 29 |  |  | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_11_(Moscow).svg) | ✅  |
+| 12 | 7 | 7 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_12_(Moscow).svg) | ⚠️ termini: OSM [Бунинская аллея, Новоясеневская / Битцевский парк] vs Wikidata [Bittsevsky Park, Buninskaya Alleya] |
+| 15 | 8 | 8 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_15_(Moscow).svg) | ⚠️ termini: OSM [Некрасовка, Нижегородская] vs Wikidata [Nizhegorodskaya, Nekrasovka] |
+| 16 | 11 | 11 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Line_16_(Moscow).svg) | ⚠️ termini: OSM [Новомосковская, ЗИЛ] vs Wikidata [ZIL, Novomoskovskaya] |
+
 ### Métro de Paris — Wikidata [Q50716](https://www.wikidata.org/wiki/Q50716)
 
 6 pass · 10 warn · 0 fail · 0 unmatched — 2026-09-09
@@ -73,3 +95,89 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 | Blue | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | Red | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | Silver | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+
+### BART — Wikidata [Bay Area Rapid Transit](https://www.wikidata.org/wiki/Q610120)
+
+4 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| Blue | 18 | 18 | 2 | ✓ | ✓ |  | ✅  |
+| Green | 22 | 22 | 2 | ✓ | ✓ |  | ✅  |
+| Orange | 21 | 21 | 2 | ✓ | ✓ |  | ✅  |
+| Red | 24 | 24 | 2 | ✓ | ✓ |  | ✅  |
+| Yellow | 27 | 28 | 4 | ✓ | ✓ |  | ⚠️ station count 27 vs Wikipedia 28 |
+
+### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
+
+0 pass · 17 warn · 1 fail · 17 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| A | 20 | 20 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Tokyo_subway_map_black_fixed_grey_asakusa.PNG) | ⚠️ termini: OSM [西馬込, 押上〈スカイツリー前〉] vs Wikidata [Nishi-magome Station, Oshiage Station] |
+| Al | 19 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| B | 33 | 32 |  | ✗ | ✗ |  | ⚠️ station count 33 vs Wikipedia 32; termini: OSM [あざみ野, 湘南台] vs Wikidata [Yokohama Municipal Subway Shōnandai Station, Azamino Station]; colour #005ba5 vs #0000ff |
+| C | 20 | 20 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroChiyoda.png) | ⚠️ termini: OSM [代々木上原, 綾瀬, 北綾瀬] vs Wikidata [Yoyogi-Uehara Station, Kita-Ayase Station] |
+| DT | 40 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| DT | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| DT;Z;TS;TN | 57 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| E | 38 | 38 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Toei_Oedo_line.png) | ⚠️ termini: OSM [光が丘, 都庁前] vs Wikidata [Hikarigaoka Station, Tochōmae Station] |
+| F | 16 | 16 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroFukutoshin.png) | ⚠️ termini: OSM [和光市, 渋谷, 小竹向原] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Wakōshi Station] |
+| G | 19 | 19 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroGinzaLine.png) | ⚠️ termini: OSM [浅草, 渋谷] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Asakusa Station] |
+| G | 10 | 10 |  | ✗ | ✓ |  | ⚠️ termini: OSM [中山, 日吉] vs Wikidata [Nakayama, Hiyoshi Station] |
+| H | 22 | 22 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroHibiya.png) | ⚠️ termini: OSM [中目黒, 北千住] vs Wikidata [Naka-Meguro Station, Kita-Senju Station] |
+| I | 27 | 27 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:ToeiMita.png) | ⚠️ termini: OSM [目黒, 西高島平] vs Wikidata [Tokyu Railways, Tokyo Metro and Toei Subway Meguro Station, Nishi-Takashimadaira Station] |
+| JB | 18 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| JL | 15 | 85 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:J%C5%8Dban-Linie.png) | ❌ station count 15 vs Wikipedia 85; termini: OSM [綾瀬, 取手, 我孫子, 北千住] vs Wikidata [JR East Nippori Station, Iwanuma Station]; colour #939598 vs #0000ff |
+| KS-AE | 19 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| KS-AE | 19 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| M | 28 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| MG | 12 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| MM | 6 | 6 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Minatomirai_Line_Map.svg) | ⚠️ termini: OSM [横浜, 元町・中華街] vs Wikidata [Tokyu Railways and Yokohama Minatomirai Railway Yokohama Station, Motomachi-Chūkagai Station]; colour #c61094 vs #00008b |
+| N | 19 | 19 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroNamboku.png) | ⚠️ termini: OSM [目黒, 赤羽岩淵] vs Wikidata [Tokyu Railways, Tokyo Metro and Toei Subway Meguro Station, Akabane-iwabuchi Station] |
+| OT | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| OT | 11 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| S | 21 | 21 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:ToeiShinjukuLine.png) | ⚠️ termini: OSM [本八幡, 新線新宿] vs Wikidata [Shinsen-Shinjuku Station, Motoyawata Station]; colour #6cbb5a vs #b0bf1e |
+| S | 9 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| SI | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| SI | 3 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| SR | 8 | 8 |  | ✗ | ✗ |  | ⚠️ termini: OSM [赤羽岩淵, 浦和美園] vs Wikidata [Urawa Misono Station, Akabane-iwabuchi Station]; colour #3564af vs #0000cd |
+| T | 23 | 23 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroTozai.png) | ⚠️ termini: OSM [中野, 西船橋] vs Wikidata [Nakano Station, Nishi-Funabashi Station] |
+| TJ | 20 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| TR | 9 | 9 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:T%C5%8Dy%C5%8D_Rapid_Railway_Linemap.svg) | ⚠️ termini: OSM [東葉勝田台, 西船橋] vs Wikidata [Tōyō-Katsutadai Station, Nishi-Funabashi Station] |
+| TS | 46 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| TS | 15 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| Y | 24 | 24 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroYurakucho.png) | ⚠️ termini: OSM [和光市, 新木場] vs Wikidata [Shin-Kiba Station, Wakōshi Station, Sumiyoshi Station] |
+| Z | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroHanzomon.png) | ⚠️ termini: OSM [渋谷, 押上〈スカイツリー前〉] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Oshiage Station] |
+
+### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
+
+0 pass · 12 warn · 0 fail · 1 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| A | 20 | 20 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Tokyo_subway_map_black_fixed_grey_asakusa.PNG) | ⚠️ termini: OSM [西馬込, 押上〈スカイツリー前〉] vs Wikidata [Nishi-magome Station, Oshiage Station] |
+| C | 20 | 20 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroChiyoda.png) | ⚠️ termini: OSM [代々木上原, 綾瀬, 北綾瀬] vs Wikidata [Yoyogi-Uehara Station, Kita-Ayase Station] |
+| E | 38 | 38 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Toei_Oedo_line.png) | ⚠️ termini: OSM [光が丘, 都庁前] vs Wikidata [Hikarigaoka Station, Tochōmae Station] |
+| F | 16 | 16 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroFukutoshin.png) | ⚠️ termini: OSM [和光市, 渋谷, 小竹向原] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Wakōshi Station] |
+| G | 19 | 19 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroGinzaLine.png) | ⚠️ termini: OSM [浅草, 渋谷] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Asakusa Station] |
+| H | 22 | 22 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroHibiya.png) | ⚠️ termini: OSM [中目黒, 北千住] vs Wikidata [Naka-Meguro Station, Kita-Senju Station] |
+| I | 27 | 27 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:ToeiMita.png) | ⚠️ termini: OSM [目黒, 西高島平] vs Wikidata [Tokyu Railways, Tokyo Metro and Toei Subway Meguro Station, Nishi-Takashimadaira Station] |
+| M | 28 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| N | 19 | 19 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroNamboku.png) | ⚠️ termini: OSM [目黒, 赤羽岩淵] vs Wikidata [Tokyu Railways, Tokyo Metro and Toei Subway Meguro Station, Akabane-iwabuchi Station] |
+| S | 21 | 21 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:ToeiShinjukuLine.png) | ⚠️ termini: OSM [本八幡, 新線新宿] vs Wikidata [Shinsen-Shinjuku Station, Motoyawata Station]; colour #6cbb5a vs #b0bf1e |
+| T | 23 | 23 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroTozai.png) | ⚠️ termini: OSM [中野, 西船橋] vs Wikidata [Nakano Station, Nishi-Funabashi Station] |
+| Y | 24 | 24 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroYurakucho.png) | ⚠️ termini: OSM [和光市, 新木場] vs Wikidata [Shin-Kiba Station, Wakōshi Station, Sumiyoshi Station] |
+| Z | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroHanzomon.png) | ⚠️ termini: OSM [渋谷, 押上〈スカイツリー前〉] vs Wikidata [Tokyu Railways and Tokyo Metro Shibuya Station, Oshiage Station] |
+
+### VOR — Wikidata [Verkehrsverbund Ost-Region](https://www.wikidata.org/wiki/Q2516485)
+
+0 pass · 0 warn · 0 fail · 5 unmatched — 2026-09-09
+
+| Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
+|---|---|---|---|---|---|---|---|
+| U1 | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| U2 | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| U3 | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| U4 | 20 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| U6 | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
