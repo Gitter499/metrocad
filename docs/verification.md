@@ -78,13 +78,30 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 
 ### SEPTA — Wikidata [Q7451006](https://www.wikidata.org/wiki/Q7451006)
 
-0 pass · 1 warn · 0 fail · 2 unmatched — 2026-09-09
+1 pass · 13 warn · 1 fail · 5 unmatched — 2026-09-09
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
 | B | 24 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| D | 5 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| G | 7 | 64 |  | ✗ | ✓ |  | ❌ station count 7 vs Wikipedia 64; termini: OSM [Girard Avenue & 63rd Street, Frankford Avenue & Delaware Avenue] vs Wikidata [63rd and Girard, Richmond-Westmoreland Streets Loop] |
 | L | 28 |  |  |  |  |  | ➖ no matching line item on Wikidata |
-| PATCO | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:PATCO-Map.png) | ⚠️ termini: OSM [15th-16th & Locust, Lindenwold, Woodcrest] vs Wikidata [Lindenwold, 15–16th & Locust] |
+| M | 22 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| PATCO | 14 | 14 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:PATCO-Map.png) | ⚠️ termini: OSM [15th-16th & Locust, Lindenwold] vs Wikidata [Lindenwold, 15–16th & Locust] |
+| T | 41 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| AIR | 10 |  |  | ✗ | ✓ |  | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Temple University, Airport Terminals E & F] vs Wikidata [High Wycombe railway station, Claremont railway station] |
+| CHE | 14 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #98783b |
+| CHW | 14 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #00bbb3 |
+| CYN | 6 | 5 |  | ✗ | ✓ |  | ⚠️ station count 6 vs Wikipedia 5; termini: OSM [Cynwyd, Jefferson / 11th Street / Jefferson Station] vs Wikidata [Cynwyd, Suburban Station] |
+| FOX | 10 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #ff8942 |
+| LAN | 26 | 27 |  | ✓ | ✓ |  | ⚠️ station count 26 vs Wikipedia 27 |
+| MED | 20 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #0081c5 |
+| NOR | 16 |  |  | ✓ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; colour #4c748c vs #ee5067 |
+| PAO | 26 |  |  | ✓ | ✓ |  | ✅ no station count on Wikipedia/Wikidata |
+| TRE | 15 | 15 |  | ✓ | ✗ |  | ⚠️ colour #4c748c vs #f686c3 |
+| WAR | 16 |  |  | ✗ | ✗ |  | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [Warminster, 30th Street] vs Wikidata [Warminster, Penn Medicine station]; colour #4c748c vs #ffd457 |
+| WTR | 22 |  |  | ✗ | ✓ |  | ⚠️ no station count on Wikipedia/Wikidata; termini: OSM [West Trenton, 30th Street] vs Wikidata [West Trenton station, Penn Medicine station] |
+| WIL | 22 | 22 |  | ✓ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:Wilmington_Newark_Line_2015.png) | ⚠️ colour #4c748c vs #8ed16a |
 
 ### Pittsburgh Regional Transit — Wikidata [Q7199143](https://www.wikidata.org/wiki/Q7199143)
 
