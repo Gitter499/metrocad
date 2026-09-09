@@ -1,7 +1,7 @@
 name: Verify networks against Wikidata and official maps
 on:
   push:
-    paths: ['packages/core/fixtures/**', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'packages/core/src/svgimport.ts', 'packages/core/src/official/**', 'scripts/verify-web.mjs', 'scripts/verify-official.mjs', '.github/workflows/verify.yml']
+    paths: ['packages/core/fixtures/**', 'packages/core/official-sources.json', 'packages/core/src/verify.ts', 'packages/core/src/network.ts', 'packages/core/src/svgimport.ts', 'packages/core/src/official/**', 'scripts/verify-web.mjs', 'scripts/verify-official.mjs', 'scripts/official-*.mjs', '.github/workflows/verify.yml']
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
@@ -23,11 +23,19 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install pymupdf pillow
+      - run: npx playwright install --with-deps chromium
+      - name: Candidate Commons diagrams for cities without a pinned map
+        run: node scripts/official-discover.mjs
       - name: Every city vs its official / reference map
         run: |
           for city in $(node -e "console.log(Object.keys(require('./packages/core/official-sources.json')).join(' '))"); do
             node scripts/official-sync.mjs "$city" || echo "::warning::$city differs from its official map — see docs/verification-$city.md"
           done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-maps
+          path: tmp/official/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -11,6 +11,7 @@ const width = args.includes('--width') ? args[args.indexOf('--width') + 1] : '90
 const sources = JSON.parse(fs.readFileSync('packages/core/official-sources.json', 'utf8'));
 const src = sources[city];
 if (!src) { console.error(`no source registered for ${city}`); process.exit(2); }
+if (!src.url && !fileArg) { console.error(`${city}: no map pinned yet (candidates come from scripts/official-discover.mjs)`); process.exit(0); }
 fs.mkdirSync('tmp/official', { recursive: true });
 let file = fileArg;
 if (!file) {
