@@ -146,6 +146,13 @@ Tests: `npm test` (layout determinism, manifold validity of every part kind, pac
 |---|
 | ![Outline base](docs/screenshots/base-outline-philadelphia.png) |
 
+Philadelphia in the app (`docs/screenshots/philadelphia/`, every tab): wall, close-up, print beds, assembly, AR, farm schedule.
+
+| Wall | Close-up |
+|---|---|
+| ![wall](docs/screenshots/philadelphia/01-wall-angle.png) | ![close-up](docs/screenshots/philadelphia/03-wall-closeup.png) |
+| ![beds](docs/screenshots/philadelphia/05-print-beds.png) | ![schedule](docs/screenshots/philadelphia/09-farm-schedule.png) |
+
 ## License
 
 MIT. Inter font © Rasmus Andersson, SIL Open Font License.
