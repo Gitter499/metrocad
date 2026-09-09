@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import { layoutFromSvg, layoutFromExtract, extractFromJson, extractSvg, withDefaults, TextFont } from '@metrocad/core';
+const net = JSON.parse(fs.readFileSync('packages/core/fixtures/philadelphia.json', 'utf8'));
+const font = TextFont.fromBuffer(fs.readFileSync('packages/core/fonts/Inter-Bold.ttf'));
+const params = withDefaults({ widthMm: 900 });
+const svg = fs.readFileSync(process.argv[2], 'utf8');
+const a = layoutFromSvg(svg, net, params, font, {});
+const exj = JSON.parse(fs.readFileSync('packages/core/fixtures/philadelphia.official.json', 'utf8'));
+const b = layoutFromExtract(extractFromJson(exj), net, params, font, {});
+const ex = extractSvg(svg);
+console.log('svg extract: strokes', [...ex.strokes.keys()].length, 'texts', ex.texts.length, 'dots', ex.dots?.length, 'partial', ex.texts.filter(t=>t.partial).length);
+console.log('json extract: strokes', Object.keys(exj.strokes).length, 'texts', exj.texts.length, 'dots', exj.dots?.length, 'partial', exj.texts.filter(t=>t.partial).length);
+for (const [name, r] of [['svg', a], ['json', b]]) console.log(name, 'stations', r.layout.stations.length, 'chains', r.layout.lines.map((l) => `${l.ref}:${l.chains.length}`).join(' '));
+console.log(a.layout.lines.map((l) => `${l.id} ${l.color} chains=${l.chains.length} pts=${l.chains.reduce((s, c) => s + c.points.length, 0)}`).join('\n'));
+console.log('report', a.report.lineColours.map((c) => `${c.ref}=${c.svgColour}(${c.pieces})`).join(' '));

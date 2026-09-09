@@ -146,7 +146,7 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
   const chainCSs: ChainCS[] = [];
   const halfW = params.lineWidth / 2;
   const halfPlane = (at: Vec2, dir: Vec2): CrossSection => {
-    // Half-plane containing points "behind" dir (i.e. dot(p - at, dir) <= 0): a big square whose +x edge passes through `at`.
+    // Half-plane of points *ahead* of `at` along dir (dot(p - at, dir) >= 0): what a bed-split cut removes beyond a piece's end.
     const sq = CrossSection.square([BIG, 2 * BIG], false).translate([-BIG, -BIG]);
     const r = sq.rotate((angleOf(dir) * 180) / Math.PI);
     sq.delete();
@@ -167,17 +167,23 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
     if (!caps.length) continue;
     let cs = CrossSection.union(caps);
     caps.forEach((c) => c.delete());
+    const trace: string[] = [`caps ${cs.area().toFixed(0)}`];
     // straight cuts at bed splits (leave clearance/2 on each side so the two pieces do not touch)
-    if (ch.startEnd === 'cut') {
-      const dir = norm(sub(pts[1], pts[0]));
-      const hp = halfPlane(add(pts[0], [dir[0] * clr * 0.5, dir[1] * clr * 0.5]), [-dir[0], -dir[1]]);
+    // direction from the first/last pair of *distinct* points (a repeated point would give a NaN cut that eats the piece)
+    const firstDistinct = pts.findIndex((q, k) => k > 0 && dist(q, pts[0]) > 1e-6);
+    let lastDistinct = pts.length - 2; while (lastDistinct > 0 && dist(pts[lastDistinct], pts[pts.length - 1]) <= 1e-6) lastDistinct--;
+    if (ch.startEnd === 'cut' && firstDistinct > 0) {
+      const dir = norm(sub(pts[firstDistinct], pts[0]));
+      const hp = halfPlane(add(pts[0], [dir[0] * clr * 0.5, dir[1] * clr * 0.5]), dir);
+      const n = cs.subtract(hp); cs.delete(); hp.delete(); cs = n;
+      trace.push(`startcut ${cs.area().toFixed(0)}`);
+    }
+    if (ch.endEnd === 'cut' && lastDistinct >= 0) {
+      const dir = norm(sub(pts[pts.length - 1], pts[lastDistinct]));
+      const hp = halfPlane(sub(pts[pts.length - 1], [dir[0] * clr * 0.5, dir[1] * clr * 0.5]), [-dir[0], -dir[1]]);
       const n = cs.subtract(hp); cs.delete(); hp.delete(); cs = n;
     }
-    if (ch.endEnd === 'cut') {
-      const dir = norm(sub(pts[pts.length - 1], pts[pts.length - 2]));
-      const hp = halfPlane(sub(pts[pts.length - 1], [dir[0] * clr * 0.5, dir[1] * clr * 0.5]), dir);
-      const n = cs.subtract(hp); cs.delete(); hp.delete(); cs = n;
-    }
+    trace.push(`cuts ${cs.area().toFixed(0)}`);
     // station ends: subtract the marker (with clearance)
     for (const sid of [ch.startStation, ch.endStation]) {
       if (!sid) continue;
@@ -185,6 +191,7 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
       if (!mk) continue;
       const off = mk.offset(clr, 'Round');
       const n = cs.subtract(off); cs.delete(); off.delete(); cs = n;
+      trace.push(`end ${sid} ${cs.area().toFixed(0)}`);
     }
     // through stations: holes for dots
     for (const t of ch.throughStations) {
@@ -199,10 +206,10 @@ export function buildParts(m: ManifoldToplevel, layout: LayoutResult, params: De
       const mk = markerCS.get(st.id)!;
       const off = mk.offset(clr, 'Round');
       const inter = cs.intersect(off);
-      if (inter.area() > 0.01) { const n = cs.subtract(off); cs.delete(); cs = n; }
+      if (inter.area() > 0.01) { const n = cs.subtract(off); cs.delete(); cs = n; trace.push(`marker ${st.id} ${cs.area().toFixed(0)}`); }
       inter.delete(); off.delete();
     }
-    if (cs.area() < 0.5) { cs.delete(); continue; }
+    if (cs.area() < 0.5) { warnings.push(`Line piece ${ch.id} (${pts.length} points) vanished after cutting markers/holes: ${trace.join(' → ')}`); cs.delete(); continue; }
     chainCSs.push({ chain: ch, lineId: ln.id, cs: keep(cs), bbox: { x: bb.x - halfW, y: bb.y - halfW, w: bb.w + 2 * halfW, h: bb.h + 2 * halfW } });
     ci++;
   }

@@ -1,0 +1,17 @@
+import Module from 'manifold-3d';
+import fs from 'node:fs';
+import { buildFromNetwork, TextFont } from '@metrocad/core';
+const city = process.argv[2] ?? 'philadelphia';
+const net = JSON.parse(fs.readFileSync(`packages/core/fixtures/${city}.json`, 'utf8'));
+const officialExtract = fs.existsSync(`packages/core/fixtures/${city}.official.json`) ? JSON.parse(fs.readFileSync(`packages/core/fixtures/${city}.official.json`, 'utf8')) : undefined;
+const font = TextFont.fromBuffer(fs.readFileSync('packages/core/fonts/Inter-Bold.ttf'));
+const wasm = await Module(); wasm.setup();
+const r = buildFromNetwork(net, { params: { widthMm: 900 }, font, manifold: wasm, officialExtract });
+const byKind = {}; for (const p of r.parts) byKind[p.kind] = (byKind[p.kind] ?? 0) + 1;
+console.log('parts', byKind);
+const chains = r.layout.lines.map((l) => `${l.ref}:${l.chains.length}`).join(' ');
+console.log('chains', chains);
+const lineParts = {}; for (const p of r.parts) if (p.kind === 'line') lineParts[p.lineId ?? p.group ?? '?'] = (lineParts[p.lineId ?? p.group ?? '?'] ?? 0) + 1;
+console.log('line parts', lineParts);
+console.log('warnings', r.warnings.slice(0, 12));
+for (const l of r.layout.lines) for (const ch of l.chains) if (['line-b-svg1-0-0', 'line-d-svg2-0-2', 'line-l-svg0-2-1'].includes(ch.id)) console.log(ch.id, ch.startEnd, ch.endEnd, ch.startStation, ch.endStation, JSON.stringify(ch.points.slice(0, 3).map((p) => p.map((v) => +v.toFixed(2)))), JSON.stringify(ch.points.slice(-2).map((p) => p.map((v) => +v.toFixed(2)))), 'thru', ch.throughStations.length);

@@ -511,7 +511,7 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
     if (typeof process !== 'undefined' && process.env?.SVG_DEBUG === 'colours') log(`  ${ln.ref} candidates ${tried.join(' ')}`);
     // Enough of the line's stations sit on strokes of this colour: a share of them, or at least three (long lines
     // whose labels are mostly bare ordinals or logos still have a few clean hits).
-    if (best && (best.score > 0.15 || best.hits >= 3 || pts.length === 0)) assigned.set(ln.id, best.c);
+    if (best && pts.length > 0 && (best.score > 0.15 || best.hits >= 3)) assigned.set(ln.id, best.c);
     log(`line ${ln.ref}: ${best ? `${best.c} (${(best.score * 100).toFixed(0)}% of ${pts.length} stations)` : 'no colour match'}`);
   }
   // 2b. Resolve which text is which station. A name that appears more than once ("Allegheny" on three lines) goes to
@@ -761,6 +761,35 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
       }
     });
     lines.push({ id: ln.id, ref: ln.ref, name: ln.name, color: ((opts.officialColours ?? true) && assigned.get(ln.id)) ? (assigned.get(ln.id) as Hex) : ln.color, chains });
+  }
+  // An interchange whose line ends sit far apart on the drawing (SEPTA draws 30th Street's Regional Rail, L and
+  // trolley platforms as separate nodes joined by a connector) gets one marker per cluster of ends, not one pill
+  // spanning them all — a pill that long would swallow every ribbon under it.
+  {
+    const rMaj = markerRadiusMajor(params);
+    const splitR = rMaj * 2 + params.lineWidth;
+    const extra: LayoutStation[] = [];
+    for (const st of [...stMap.values()]) {
+      if (!st.major || st.markerPoints.length < 2) continue;
+      const clusters: Vec2[][] = [];
+      for (const p of st.markerPoints) { const c = clusters.find((cl) => cl.some((q) => dist(p, q) <= splitR)); if (c) c.push(p); else clusters.push([p]); }
+      if (clusters.length < 2) continue;
+      clusters.sort((a, b) => b.length - a.length);
+      st.markerPoints = clusters[0];
+      clusters.slice(1).forEach((cl, k) => {
+        const id = `${st.id}~m${k + 2}`;
+        const twin: LayoutStation = { ...st, id, markerPoints: cl, x: cl[0][0], y: cl[0][1] };
+        extra.push(twin);
+        // chain ends that produced these points now belong to the twin
+        for (const ln of lines) for (const ch of ln.chains) {
+          if (ch.startStation === st.id && cl.some((q) => dist(q, ch.points[0]) < 1e-6)) ch.startStation = id;
+          if (ch.endStation === st.id && cl.some((q) => dist(q, ch.points[ch.points.length - 1]) < 1e-6)) ch.endStation = id;
+        }
+      });
+      log(`SVG import: "${st.name}" is drawn as ${clusters.length} separate interchange nodes; split`);
+    }
+    for (const t of extra) stMap.set(t.id, t);
+    if (extra.length) net = { ...net, stations: [...net.stations, ...extra.map((t) => ({ ...net.stations.find((s) => s.id === t.id.split('~m')[0])!, id: t.id }))] };
   }
   for (const st of stMap.values()) { if (!st.markerPoints.length) st.markerPoints = [[st.x, st.y]]; if (st.major) { st.x = st.markerPoints.reduce((a, p) => a + p[0], 0) / st.markerPoints.length; st.y = st.markerPoints.reduce((a, p) => a + p[1], 0) / st.markerPoints.length; } }
 

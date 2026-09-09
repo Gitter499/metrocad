@@ -8,7 +8,7 @@ Source drawing: `septa-june26.svg` · 900 mm wide · 280/524 stations placed on 
 |---|---|---|---|---|---|---|---|
 | B SEPTA Broad Street Line | 24 | 22 | 1 | 0 | #f58220 | #f37324 | NRG, 8th & Market |
 | D D (D1–D2) | 50 | 45 | 0 | 0 | #dc2e6b | #5e9732 | Edgemont Street, Woodland Avenue, Springfield Road, Anderson Avenue, 69th Street Transportation Center West Terminal |
-| G SEPTA 15 | 51 | 0 | 0 | 0 | #ffd700 | #ef3d42 | Girard Avenue & 63rd Street, Girard Avenue & 62nd Street, Girard Avenue & 61st Street, Girard Avenue & 60th Street, Girard Avenue & 59th Street, Girard Avenue & 57th Street, Girard Avenue & 56th Street, Girard Avenue & 54th Street … (+43) |
+| G SEPTA 15 | 51 | 0 | 0 | 0 | #ffd700 | — | Girard Avenue & 63rd Street, Girard Avenue & 62nd Street, Girard Avenue & 61st Street, Girard Avenue & 60th Street, Girard Avenue & 59th Street, Girard Avenue & 57th Street, Girard Avenue & 56th Street, Girard Avenue & 54th Street … (+43) |
 | L SEPTA Market-Frankford Line | 28 | 27 | 2 | 0 | #0097d6 | #007dc3 | 69th Street Transportation Center |
 | M SEPTA Norristown High Speed Line | 22 | 21 | 2 | 0 | #5f249f | #781d7d | 69th Street Transportation Center |
 | PATCO PATCO Speedline | 14 | 10 | 0 | 0 | #db5450 | #ef3d42 | 15th-16th & Locust, 12th-13th & Locust, 9th-10th & Locust, 8th & Market |
