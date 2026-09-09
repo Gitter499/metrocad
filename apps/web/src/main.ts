@@ -3,7 +3,7 @@ import '@google/model-viewer';
 import { Preview } from './preview.js';
 import { PlatesView } from './plates3d.js';
 import type { FromWorker, ToWorker, DistributiveOmit } from './protocol.js';
-import type { PartialParams } from '@metrocad/core';
+import { slugify, type PartialParams } from '@metrocad/core';
 
 const PRINTERS: Record<string, { name: string; short: string; bed: { x: number; y: number }; slicer: string }> = {
   'bambu-a1-mini': { name: 'Bambu Lab A1 mini · 180 × 180', short: 'A1 mini', bed: { x: 180, y: 180 }, slicer: 'bambu-a1-mini' },
@@ -139,7 +139,7 @@ async function generate(fixture?: string) {
   const modes = val('modes').split(',') as any;
   const t0 = performance.now();
   try {
-    const usedFixture = fixture && city.toLowerCase() === fixture ? fixture : undefined;
+    const usedFixture = fixture && slugify(city) === fixture ? fixture : undefined;
     const officialMap = val('officialMap') as 'auto' | 'none' | 'custom';
     const m = (await call({ type: 'build', city, fixture: usedFixture, modes, params: params(), officialMap, mapSvg: officialMap === 'custom' ? customSvg : undefined })) as Extract<FromWorker, { type: 'built' }>;
     built = m; showResult(m, performance.now() - t0);
