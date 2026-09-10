@@ -24,7 +24,7 @@ verification error: Cannot read properties of undefined (reading '0')
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
 | Bakerloo | 25 | 25 | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Bakerloo_Line.png) | ✅  |
-| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_line_%26_London_map.svg) | ✅  |
+| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_Line.svg) | ✅  |
 | Circle | 35 | 36 | 37 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Circle_line_%26_London_map.svg) | ⚠️ station count 35 vs Wikipedia 36 |
 | District | 60 | 60 | 61 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:District_Line.svg) | ✅  |
 | Hammersmith & City | 29 | 29 | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Hammersmith_%26_City_Line_%26_London_map.svg) | ✅  |
@@ -182,7 +182,7 @@ verification error: Cannot read properties of undefined (reading '0')
 | N | 19 | 19 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroNamboku.png) | ⚠️ termini: OSM [目黒, 赤羽岩淵] vs Wikidata [Tokyu Railways, Tokyo Metro and Toei Subway Meguro Station, Akabane-iwabuchi Station] |
 | OT | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | OT | 11 |  |  |  |  |  | ➖ no matching line item on Wikidata |
-| S | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| S | 21 | 21 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:ToeiShinjukuLine.png) | ⚠️ termini: OSM [本八幡, 新線新宿] vs Wikidata [Shinsen-Shinjuku Station, Motoyawata Station]; colour #6cbb5a vs #b0bf1e |
 | S | 9 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | SI | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | SI | 3 |  |  |  |  |  | ➖ no matching line item on Wikidata |
