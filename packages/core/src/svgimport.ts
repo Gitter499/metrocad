@@ -784,6 +784,7 @@ export function layoutFromExtract(ex0: SvgExtract, net0: MetroNetwork, params: D
         const through = here.filter((h) => !h.st.major && h.s > s0 + 1e-6 && h.s < s1 - 1e-6).map((h) => ({ id: h.st.id, point: pointAt(path, h.s).point, s: h.s - s0 }));
         for (const t of through) { const st = stMap.get(t.id)!; st.x = t.point[0]; st.y = t.point[1]; st.markerPoints = [t.point]; }
         const pieces = splitForBed(smooth, params.lineWidth / 2 + 1, bedW, bedH, through.map((t) => t.s));
+        if ((globalThis as any).process?.env?.SPLIT_DEBUG) for (const pc of pieces) { const xs = pc.map((q) => q[0]), ys = pc.map((q) => q[1]); const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys); if (Math.max(w, h) > Math.max(bedW, bedH)) console.log('SPLIT_DEBUG', JSON.stringify({ line: ln.ref, path: smooth.map((q) => [+q[0].toFixed(2), +q[1].toFixed(2)]), stations: through.map((t) => +t.s.toFixed(2)), bedW, bedH, pad: params.lineWidth / 2 + 1, bad: [w, h] })); }
         let acc = 0;
         pieces.forEach((pts, qi) => {
           const L = pathLength(pts); const from = acc, to = acc + L; acc = to;

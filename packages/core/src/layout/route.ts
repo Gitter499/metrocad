@@ -260,41 +260,54 @@ export function splitForBed(path: Vec2[], pad: number, maxW: number, maxH: numbe
   // cumulative arc-length per point
   const cum: number[] = [0];
   for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + dist(path[i - 1], path[i]));
-  const total = cum[cum.length - 1];
+  const sp = [...stationParams].sort((a, b) => a - b);
   const pieces: Vec2[][] = [];
   let startIdx = 0;
   let startPt: Vec2 = path[0];
+  let startS = 0; // arc-length parameter of startPt (a cut may sit inside a segment)
   let i = 1;
   while (i < path.length) {
     const cand = [startPt, ...path.slice(startIdx + 1, i + 1)];
     if (!fits(cand)) {
-      // Cut somewhere between the last point that fit and this one: prefer midpoint between stations.
+      // Cut somewhere between the last point that fit and this one: prefer a midpoint between stations.
       const sBad = cum[i];
-      const sGood = i - 1 > startIdx ? cum[i - 1] : cum[startIdx];
-      let cutS = (sGood + sBad) / 2;
-      // Prefer a span midpoint between consecutive stations if it lies in the fitting range
-      const sp = [...stationParams].sort((a, b) => a - b);
+      const sGood = i - 1 > startIdx ? cum[i - 1] : startS;
+      const pieceTo = (cs: number) => [startPt, ...path.slice(startIdx + 1).filter((_, k) => cum[startIdx + 1 + k] < cs), pointAt(path, cs).point];
+      let cutS: number | undefined;
       for (let j = 0; j + 1 < sp.length; j++) {
         const mid = (sp[j] + sp[j + 1]) / 2;
-        if (mid > cum[startIdx] + 1e-6 && mid <= sGood) cutS = mid;
+        if (mid > startS + 30 && mid <= sGood) cutS = mid; // and never leave a scrap shorter than 30 mm
       }
-      if (cutS <= cum[startIdx] + 1e-6) cutS = Math.min(sBad, cum[startIdx] + (sBad - cum[startIdx]) * 0.5);
+      if (cutS === undefined) {
+        // No station gap to hide the joint in: take the longest fitting run into the failing segment.
+        let lo = sGood, hi = sBad;
+        for (let k = 0; k < 12; k++) { const m = (lo + hi) / 2; if (fits(pieceTo(m))) lo = m; else hi = m; }
+        cutS = lo;
+      }
+      // Always advance: a cut at or behind the current start would loop forever.
+      if (cutS <= startS + 1e-6) cutS = startS + (sBad - startS) * 0.5;
       const cutPt = pointAt(path, cutS).point;
-      const piece = [startPt, ...path.slice(startIdx + 1).filter((_, k) => cum[startIdx + 1 + k] < cutS), cutPt];
+      const piece = pieceTo(cutS);
       pieces.push(dedupe(piece));
-      // new start
       startPt = cutPt;
+      startS = cutS;
       startIdx = Math.max(startIdx, cum.findIndex((s) => s >= cutS) - 1);
       i = startIdx + 1;
-      if (pieces.length > 200) break;
+      if (pieces.length > 400) break;
       continue;
     }
     i++;
   }
   const last = [startPt, ...path.slice(startIdx + 1)];
-  if (pathLength(last) > 1e-6) pieces.push(dedupe(last));
-  void total;
-  return pieces.filter((p) => p.length >= 2);
+  if (pathLength(last) > 1e-6) {
+    const prev = pieces[pieces.length - 1];
+    // Never hand back a piece that does not fit the bed (only reachable through the guard above).
+    if (!fits(last) && pieces.length > 0 && last.length > 2) pieces.push(...splitForBed(last, pad, maxW, maxH, []));
+    // A short tail scrap joins the previous piece when that still fits.
+    else if (prev && pathLength(last) < 30 && fits([...prev, ...last.slice(1)])) pieces[pieces.length - 1] = dedupe([...prev, ...last.slice(1)]);
+    else pieces.push(dedupe(last));
+  }
+  return pieces.filter((p) => p.length >= 2 && pathLength(p) > 1e-3);
 }
 
 /** Arc-length parameter of the point on path closest to q. */
