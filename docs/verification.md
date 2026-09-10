@@ -4,7 +4,7 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 
 ### MARTA — Wikidata [Metropolitan Atlanta Rapid Transit Authority](https://www.wikidata.org/wiki/Q1423792)
 
-3 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-09
+3 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -19,7 +19,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### London Underground — Wikidata [Q20075](https://www.wikidata.org/wiki/Q20075)
 
-8 pass · 2 warn · 1 fail · 0 unmatched — 2026-09-09
+8 pass · 2 warn · 1 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -41,7 +41,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### Московский метрополитен — Wikidata [Moscow Metro](https://www.wikidata.org/wiki/Q5499)
 
-1 pass · 14 warn · 0 fail · 0 unmatched — 2026-09-09
+1 pass · 14 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -67,7 +67,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### Métro de Paris — Wikidata [Q50716](https://www.wikidata.org/wiki/Q50716)
 
-6 pass · 10 warn · 0 fail · 0 unmatched — 2026-09-09
+6 pass · 10 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -94,7 +94,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### SEPTA — Wikidata [Q7451006](https://www.wikidata.org/wiki/Q7451006)
 
-1 pass · 13 warn · 1 fail · 5 unmatched — 2026-09-09
+1 pass · 13 warn · 1 fail · 5 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -125,7 +125,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### Pittsburgh Regional Transit — Wikidata [Q7199143](https://www.wikidata.org/wiki/Q7199143)
 
-0 pass · 0 warn · 0 fail · 3 unmatched — 2026-09-09
+0 pass · 0 warn · 0 fail · 3 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -139,7 +139,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### BART — Wikidata [Bay Area Rapid Transit](https://www.wikidata.org/wiki/Q610120)
 
-4 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-09
+4 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -155,7 +155,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
 
-0 pass · 16 warn · 1 fail · 18 unmatched — 2026-09-09
+0 pass · 17 warn · 1 fail · 17 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -197,7 +197,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
 
-0 pass · 12 warn · 0 fail · 1 unmatched — 2026-09-09
+0 pass · 12 warn · 0 fail · 1 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -221,7 +221,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### VOR — Wikidata [Verkehrsverbund Ost-Region](https://www.wikidata.org/wiki/Q2516485)
 
-0 pass · 0 warn · 0 fail · 5 unmatched — 2026-09-09
+0 pass · 0 warn · 0 fail · 5 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
