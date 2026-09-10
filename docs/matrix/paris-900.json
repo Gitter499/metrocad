@@ -23,7 +23,7 @@
   "baseAreaPct": 49,
   "grams": 826,
   "costUsd": 18.17,
-  "printHours": 72.5,
+  "printHours": 72.6,
   "farms": {
     "1 × A1 mini": 77.5,
     "3 × A1 mini": 26,
@@ -31,5 +31,5 @@
     "9 × A1 mini + 2 × S3": 7.7
   },
   "assemblyHours": 11.2,
-  "buildSec": 108
+  "buildSec": 102
 }

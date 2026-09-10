@@ -18,16 +18,16 @@
     "labelText": 38,
     "tile": 11
   },
-  "plates": 19,
+  "plates": 20,
   "tiles": "11",
   "baseAreaPct": 20,
-  "grams": 216,
-  "costUsd": 4.76,
+  "grams": 217,
+  "costUsd": 4.77,
   "printHours": 19,
   "farms": {
-    "1 × A1 mini": 21.4,
-    "3 × A1 mini": 7.3,
-    "3 × A1 mini + 1 × S3": 5.6,
+    "1 × A1 mini": 21.5,
+    "3 × A1 mini": 7.2,
+    "3 × A1 mini + 1 × S3": 5.7,
     "9 × A1 mini + 2 × S3": 2.1
   },
   "assemblyHours": 3.1,

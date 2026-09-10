@@ -8,9 +8,9 @@
   "lines": 11,
   "stations": 267,
   "labels": 243,
-  "parts": 1109,
+  "parts": 1110,
   "byKind": {
-    "line": 222,
+    "line": 223,
     "ring": 109,
     "plug": 109,
     "dot": 158,
@@ -21,15 +21,15 @@
   "plates": 39,
   "tiles": "25",
   "baseAreaPct": 39,
-  "grams": 931,
-  "costUsd": 20.49,
-  "printHours": 81,
+  "grams": 932,
+  "costUsd": 20.51,
+  "printHours": 81.1,
   "farms": {
-    "1 × A1 mini": 86.1,
+    "1 × A1 mini": 86.2,
     "3 × A1 mini": 28.7,
     "3 × A1 mini + 1 × S3": 22.8,
     "9 × A1 mini + 2 × S3": 8.5
   },
-  "assemblyHours": 13.8,
-  "buildSec": 112
+  "assemblyHours": 13.9,
+  "buildSec": 110
 }
