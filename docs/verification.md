@@ -4,7 +4,7 @@ Each bundled network is checked against Wikidata: lines of the same transport ne
 
 ### MARTA — Wikidata [Metropolitan Atlanta Rapid Transit Authority](https://www.wikidata.org/wiki/Q1423792)
 
-3 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-09
+3 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -19,12 +19,12 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### London Underground — Wikidata [Q20075](https://www.wikidata.org/wiki/Q20075)
 
-8 pass · 2 warn · 1 fail · 0 unmatched — 2026-09-09
+8 pass · 2 warn · 1 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
 | Bakerloo | 25 | 25 | 24 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Bakerloo_Line.png) | ✅  |
-| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_line_%26_London_map.svg) | ✅  |
+| Central | 49 | 49 | 51 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Central_Line.svg) | ✅  |
 | Circle | 35 | 36 | 37 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Circle_line_%26_London_map.svg) | ⚠️ station count 35 vs Wikipedia 36 |
 | District | 60 | 60 | 61 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:District_Line.svg) | ✅  |
 | Hammersmith & City | 29 | 29 | 29 | ✓ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:Hammersmith_%26_City_Line_%26_London_map.svg) | ✅  |
@@ -41,7 +41,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### Московский метрополитен — Wikidata [Moscow Metro](https://www.wikidata.org/wiki/Q5499)
 
-1 pass · 14 warn · 0 fail · 0 unmatched — 2026-09-09
+1 pass · 14 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -67,7 +67,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### Métro de Paris — Wikidata [Q50716](https://www.wikidata.org/wiki/Q50716)
 
-6 pass · 10 warn · 0 fail · 0 unmatched — 2026-09-09
+6 pass · 10 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -94,7 +94,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### SEPTA — Wikidata [Q7451006](https://www.wikidata.org/wiki/Q7451006)
 
-1 pass · 13 warn · 1 fail · 5 unmatched — 2026-09-09
+1 pass · 13 warn · 1 fail · 5 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -125,7 +125,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### Pittsburgh Regional Transit — Wikidata [Q7199143](https://www.wikidata.org/wiki/Q7199143)
 
-0 pass · 0 warn · 0 fail · 3 unmatched — 2026-09-09
+0 pass · 0 warn · 0 fail · 3 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -139,7 +139,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### BART — Wikidata [Bay Area Rapid Transit](https://www.wikidata.org/wiki/Q610120)
 
-4 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-09
+4 pass · 1 warn · 0 fail · 0 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -155,7 +155,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
 
-0 pass · 16 warn · 1 fail · 18 unmatched — 2026-09-09
+0 pass · 17 warn · 1 fail · 17 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -182,7 +182,7 @@ verification error: Cannot read properties of undefined (reading '0')
 | N | 19 | 19 |  | ✗ | ✓ | [diagram](https://commons.wikimedia.org/wiki/File:TokyoMetroNamboku.png) | ⚠️ termini: OSM [目黒, 赤羽岩淵] vs Wikidata [Tokyu Railways, Tokyo Metro and Toei Subway Meguro Station, Akabane-iwabuchi Station] |
 | OT | 31 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | OT | 11 |  |  |  |  |  | ➖ no matching line item on Wikidata |
-| S | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
+| S | 21 | 21 |  | ✗ | ✗ | [diagram](https://commons.wikimedia.org/wiki/File:ToeiShinjukuLine.png) | ⚠️ termini: OSM [本八幡, 新線新宿] vs Wikidata [Shinsen-Shinjuku Station, Motoyawata Station]; colour #6cbb5a vs #b0bf1e |
 | S | 9 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | SI | 21 |  |  |  |  |  | ➖ no matching line item on Wikidata |
 | SI | 3 |  |  |  |  |  | ➖ no matching line item on Wikidata |
@@ -197,7 +197,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### 都営地下鉄 — Wikidata [Tokyo Metropolitan Bureau of Transportation](https://www.wikidata.org/wiki/Q1377135)
 
-0 pass · 12 warn · 0 fail · 1 unmatched — 2026-09-09
+0 pass · 12 warn · 0 fail · 1 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
@@ -221,7 +221,7 @@ verification error: Cannot read properties of undefined (reading '0')
 
 ### VOR — Wikidata [Verkehrsverbund Ost-Region](https://www.wikidata.org/wiki/Q2516485)
 
-0 pass · 0 warn · 0 fail · 5 unmatched — 2026-09-09
+0 pass · 0 warn · 0 fail · 5 unmatched — 2026-09-10
 
 | Line | Stations OSM | Wikipedia | Wikidata | Termini | Colour | Official diagram | Status |
 |---|---|---|---|---|---|---|---|
