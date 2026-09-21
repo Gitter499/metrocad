@@ -131,10 +131,12 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       if (!current) throw new Error('Nothing built yet');
       const res = sliceAndSchedule(current, manifold!, { changeoverMin: msg.changeoverMin, onProgress: (f, d) => post({ type: 'status', id, stage: 'slice', fraction: f, detail: d }) });
       currentSliced = res;
+      // Same layout as the full bundle's gcode/ folder: checked files per printer, rejected ones apart, dry runs, coupon, CHECK.md.
+      const all = buildBundle(current, { individualStls: false, plateStls: false, plate3mf: false, ar: false, sliced: res });
       const files: Record<string, Uint8Array> = {};
-      res.plates.forEach((sp, i) => { files[`${slugify(sp.printerId)}/${String(i + 1).padStart(2, '0')}-${slugify(sp.name)}.gcode`] = new TextEncoder().encode(sp.gcode); });
+      for (const [k, v] of Object.entries(all)) if (k.startsWith('gcode/') || k === 'plates/00-test-coupon.3mf' || k === 'README.md') files[k] = v;
       const zip = zipBundle(files);
-      post({ type: 'sliced', id, plates: res.plates.map((p) => ({ id: p.plateId, name: p.name, color: p.color, colorName: p.colorName, timeSec: p.timeSec, filamentGrams: p.stats.filamentGrams, layers: p.stats.layers, printer: p.printerName, printerId: p.printerId })), totalSec: res.totalSec, totalGrams: res.totalGrams, makespanSec: res.schedule.makespanSec, perPrinter: res.schedule.perPrinter.map((p) => ({ printer: p.printer, busySec: p.busySec, jobs: p.jobs })), zip }, [zip.buffer]);
+      post({ type: 'sliced', id, plates: res.plates.map((p) => ({ id: p.plateId, name: p.name, color: p.color, colorName: p.colorName, timeSec: p.timeSec, filamentGrams: p.stats.filamentGrams, layers: p.stats.layers, printer: p.printerName, printerId: p.printerId, ok: p.check.ok, problems: [...p.check.errors, ...p.check.warnings] })), totalSec: res.totalSec, totalGrams: res.totalGrams, makespanSec: res.schedule.makespanSec, perPrinter: res.schedule.perPrinter.map((p) => ({ printer: p.printer, busySec: p.busySec, jobs: p.jobs })), zip, rejected: res.rejected, coupon: res.coupon ? { description: res.coupon.description, ok: res.coupon.gcode.every((g) => g.check.ok) } : undefined, dryRuns: res.dryRuns.map((d) => d.plateName) }, [zip.buffer]);
     } else if (msg.type === 'assembly') {
       if (!current) throw new Error('Nothing built yet');
       const plan = buildAssemblyPlan(current);

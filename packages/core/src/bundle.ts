@@ -12,6 +12,7 @@ import type { Part } from './types.js';
 import type { FarmResult } from './farm.js';
 import { buildAssemblyPlan, renderAssemblyPlanSvg, tapeLabelsCsv } from './assembly.js';
 import { formatDuration } from './slicer/schedule.js';
+import { checkReportMarkdown } from './slicer/check.js';
 import { KNOWN_PRINTERS } from './defaults.js';
 
 export interface BundleOptions {
@@ -90,11 +91,26 @@ export function buildBundle(r: FullBuildResult, opts: BundleOptions = {}): Bundl
   if (csv) files['labels-tape.csv'] = enc(csv);
   // G-code + schedule
   if (opts.sliced) {
+    const checks: { file: string; printer: string; result: typeof opts.sliced.plates[number]['check'] }[] = [];
     opts.sliced.plates.forEach((sp, i) => {
       const n = String(i + 1).padStart(2, '0');
-      const ext = sp.printerId.startsWith('ultimaker') ? '.gcode' : '.gcode';
-      files[`gcode/${slugify(sp.printerId)}/${n}-${slugify(sp.name)}${ext}`] = enc(sp.gcode);
+      const file = sp.check.ok ? `gcode/${slugify(sp.printerId)}/${n}-${slugify(sp.name)}.gcode` : `gcode/rejected/${slugify(sp.printerId)}-${n}-${slugify(sp.name)}.gcode`;
+      files[file] = enc(sp.check.ok ? sp.gcode : `; REJECTED BY THE METROCAD SAFETY CHECK — DO NOT PRINT\n${sp.check.errors.map((e) => `; ${e}`).join('\n')}\n${sp.gcode}`);
+      checks.push({ file, printer: KNOWN_PRINTERS[sp.printerId]?.name ?? sp.printerId, result: sp.check });
     });
+    for (const d of opts.sliced.dryRuns) files[`gcode/${slugify(d.printerId)}/00-dry-run-${slugify(d.plateName)}.gcode`] = enc(d.gcode);
+    if (opts.sliced.coupon) {
+      const c = opts.sliced.coupon;
+      const objects: ThreeMfObject[] = [];
+      for (const item of c.plate.items) { const bb = itemBBox(c.parts, item.partId); for (const p of bb.parts) objects.push({ name: p.name, mesh: p.mesh, color: p.color, transform: placementTransform(item, bb.min[2]) }); }
+      files['plates/00-test-coupon.3mf'] = write3mf(objects, `${r.network.displayName} — test coupon`);
+      for (const g of c.gcode) {
+        const file = g.check.ok ? `gcode/${slugify(g.printerId)}/00-test-coupon.gcode` : `gcode/rejected/${slugify(g.printerId)}-00-test-coupon.gcode`;
+        files[file] = enc(g.gcode);
+        checks.push({ file, printer: KNOWN_PRINTERS[g.printerId]?.name ?? g.printerId, result: g.check });
+      }
+    }
+    files['gcode/CHECK.md'] = enc(checkReportMarkdown(checks));
     files['gcode/schedule.json'] = enc(JSON.stringify({ makespanSec: opts.sliced.schedule.makespanSec, totalPrintSec: opts.sliced.totalSec, totalGrams: opts.sliced.totalGrams, changeoverSec: opts.sliced.changeoverSec, printers: opts.sliced.schedule.perPrinter, assignments: opts.sliced.schedule.assignments, plates: opts.sliced.plates.map((p) => ({ plate: p.plateId, name: p.name, printer: p.printerName, printerId: p.printerId, timeSec: p.timeSec, grams: p.stats.filamentGrams, layers: p.stats.layers })) }, null, 2));
   }
   files['manifest.json'] = enc(JSON.stringify(manifest(r, plateFiles), null, 2));
@@ -180,6 +196,15 @@ function printGuide(r: FullBuildResult, plateFiles: { plate: typeof r.plates[num
     for (const p of sliced.schedule.perPrinter) lines.push(`| ${p.printer} | ${p.jobs.map((j) => r.plates.findIndex((pl) => pl.id === j) + 1).join(', ')} | ${formatDuration(p.busySec)} |`);
     lines.push('');
     lines.push('G-code for each plate is in `gcode/<printer>/NN-name.gcode`, sliced for the printer it is scheduled on (0.2 mm layers, 2 walls, 8 % infill, PLA 215/60 °C).');
+    lines.push('');
+    lines.push('## Before printing the G-code');
+    lines.push('');
+    lines.push('The safest way to print is to open the per-plate `plates/NN-*.3mf` files in your printer\'s own slicer (Bambu Studio, Cura, PrusaSlicer): parts are already placed and coloured, and the slicer uses the manufacturer\'s calibrated profile and start sequence. The bundled G-code comes from MetroCAD\'s own slicer with a short generic start sequence; before trusting it on a machine, go through these steps in order:');
+    lines.push('');
+    lines.push(`1. **Read \`gcode/CHECK.md\`.** Every file was replayed against the printer\'s limits (build volume, homing, heater limits, cold extrusion, feedrate, flow, heaters off at the end, toolpath envelope vs. the parts). ${sliced.rejected ? `**${sliced.rejected} file(s) FAILED and were moved to \`gcode/rejected/\` — do not print those.**` : 'All files passed.'}`);
+    lines.push('2. **Air print first.** `gcode/<printer>/00-dry-run-*.gcode` is the first plate with heaters off, no extrusion and every move lifted 20 mm. Watch the printer trace the plate; it proves the file format and the toolpath without heat or plastic.');
+    if (sliced.coupon) lines.push(`3. **Print the test coupon.** \`gcode/<printer>/00-test-coupon.gcode\` (or \`plates/00-test-coupon.3mf\` in your slicer) is a small piece cut from the real map: ${sliced.coupon.description}. It prints in minutes and lets you check the groove, station hole, label pocket and snap fit before printing a full plate.`);
+    lines.push(`${sliced.coupon ? 4 : 3}. Then print the plates. On Bambu printers copy the .gcode files to the microSD card, or import them in Bambu Studio (File → Import → Import G-code) and send from there; run the printer\'s bed levelling once beforehand, because the generic start sequence does not include it.`);
     lines.push('');
   }
   lines.push('## Print plates');

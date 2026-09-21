@@ -20,6 +20,7 @@ export * from './pipeline.js';
 export * from './bundle.js';
 export * from './slicer/index.js';
 export * from './farm.js';
+export * from './coupon.js';
 export * from './assembly.js';
 export * from './verify.js';
 export * from './svgimport.js';

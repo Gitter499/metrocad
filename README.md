@@ -41,7 +41,7 @@ Any other city is geocoded and pulled from OpenStreetMap and laid out automatica
 ## What you get
 
 - **Plates**: one `.3mf` and `.stl` per plate, parts nested by shape, one colour per plate (labels: two colours, one filament change).
-- **G-code**: built-in slicer for Bambu A1 mini, P1S/X1, Ultimaker S3 and Marlin, plus a schedule across your farm.
+- **G-code**: built-in slicer for Bambu A1 mini, P1S/X1, Ultimaker S3 and Marlin, plus a schedule across your farm. Every file is replayed against the printer's limits before it is written (`gcode/CHECK.md`); each printer also gets an air-print dry run and a small test coupon cut from the real map. Step-by-step for the A1 mini: [docs/printing-bambu-a1-mini.md](docs/printing-bambu-a1-mini.md).
 - **Assembly**: every piece has an engraved ID; `assembly-plan.svg`, per-line step sheets, and an in-app Assemble mode with per-step AR.
 - **Previews**: `.glb`/`.usdz` (AR), `map.svg`, 1:1 `template.svg`.
 

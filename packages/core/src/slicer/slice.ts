@@ -1029,8 +1029,9 @@ function writeGcode(
       if (o.colorChangeAtZ !== undefined && !colorChangeDone.has(i) && L.z > o.colorChangeAtZ) { colorChangeDone.add(i); colorChange = true; }
     });
     if (colorChange) {
-      out.push(`M600 ; colour change at Z ${fmt(L.z, 3)}`);
-      if (printer.flavor === 'bambu') out.push('M400 U1 ; pause for filament change');
+      // Bambu firmware pauses with M400 U1 (M600 is not part of its command set); Marlin and Griffin use M600.
+      if (printer.flavor === 'bambu') out.push(`M400 U1 ; pause for the colour change at Z ${fmt(L.z, 3)}`);
+      else out.push(`M600 ; colour change at Z ${fmt(L.z, 3)}`);
     }
 
     for (let i = 0; i < buf.n; i++) {

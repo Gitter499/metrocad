@@ -3,6 +3,9 @@ import type { ManifoldToplevel } from 'manifold-3d';
 import type { FullBuildResult } from './pipeline.js';
 import { itemBBox, placementTransform } from './pack.js';
 import { slicePlate, type SliceStats } from './slicer/slice.js';
+import { checkGcode, dryRunGcode, type GcodeCheckResult } from './slicer/check.js';
+import { buildTestCoupon, type TestCoupon } from './coupon.js';
+import type { Part, Plate } from './types.js';
 import { getPrinterProfile, processFor } from './slicer/profiles.js';
 import { scheduleJobs, type Schedule } from './slicer/schedule.js';
 import { KNOWN_PRINTERS } from './defaults.js';
@@ -18,10 +21,20 @@ export interface SlicedPlate {
   stats: SliceStats;
   /** Estimated time on the assigned printer (speed factor applied). */
   timeSec: number;
+  /** Safety check of the G-code against the printer's limits and the plate contents. Never print a file with `check.ok === false`. */
+  check: GcodeCheckResult;
 }
+
+export interface CouponGcode { printerId: string; printerName: string; gcode: string; stats: SliceStats; check: GcodeCheckResult }
 
 export interface FarmResult {
   plates: SlicedPlate[];
+  /** Air-print version of the first plate scheduled on each printer type (no heat, no extrusion). */
+  dryRuns: { printerId: string; plateId: string; plateName: string; gcode: string }[];
+  /** Small fit/printer test cut from the real geometry, sliced for every printer type in the farm. */
+  coupon?: TestCoupon & { gcode: CouponGcode[] };
+  /** Number of plates whose G-code failed the safety check. */
+  rejected: number;
   schedule: Schedule;
   totalSec: number;
   totalGrams: number;
@@ -32,6 +45,8 @@ export interface FarmOptions {
   onProgress?: (fraction: number, detail: string) => void;
   /** Minutes between plates on one printer (remove parts, clean bed, start next). Default 8. */
   changeoverMin?: number;
+  /** Build and slice the test coupon (default true). */
+  coupon?: boolean;
 }
 
 export function sliceAndSchedule(r: FullBuildResult, manifold: ManifoldToplevel, opts: FarmOptions = {}): FarmResult {
@@ -63,16 +78,56 @@ export function sliceAndSchedule(r: FullBuildResult, manifold: ManifoldToplevel,
       out = slicePlate({ objects: objectsOf(r, plate), printer, process: processFor(printer), label: plate.name }, manifold);
     }
     const timeSec = a ? a.endSec - a.startSec : out.stats.timeSec;
-    plates.push({ plateId: plate.id, name: plate.name, color: plate.color, colorName: plate.colorName, printerId: type, printerName: a?.printer ?? KNOWN_PRINTERS[type]?.short ?? type, gcode: out.gcode, stats: out.stats, timeSec });
+    const printer = getPrinterProfile(type);
+    const check = checkGcode(out.gcode, printer, { expected: expectedEnvelope(r.parts, plate) });
+    plates.push({ plateId: plate.id, name: plate.name, color: plate.color, colorName: plate.colorName, printerId: type, printerName: a?.printer ?? KNOWN_PRINTERS[type]?.short ?? type, gcode: out.gcode, stats: out.stats, timeSec, check });
     totalSec += timeSec; totalGrams += out.stats.filamentGrams;
   });
+  // Dry runs: the first passing plate per printer type.
+  const dryRuns: FarmResult['dryRuns'] = [];
+  for (const type of new Set(plates.map((p) => p.printerId))) {
+    const first = plates.find((p) => p.printerId === type && p.check.ok);
+    if (first) dryRuns.push({ printerId: type, plateId: first.plateId, plateName: first.name, gcode: dryRunGcode(first.gcode) });
+  }
+  // Test coupon for every printer type in the farm.
+  let coupon: FarmResult['coupon'];
+  if (opts.coupon !== false) {
+    opts.onProgress?.(0.97, 'Test coupon');
+    const c = buildTestCoupon(r, manifold);
+    if (c) {
+      const gcode: CouponGcode[] = [];
+      for (const f of farm) {
+        if (gcode.some((g) => g.printerId === f.printerId)) continue;
+        const printer = getPrinterProfile(f.printerId);
+        const out = slicePlate({ objects: objectsFor(c.parts, c.plate), printer, process: processFor(printer), label: 'Test coupon' }, manifold);
+        gcode.push({ printerId: f.printerId, printerName: KNOWN_PRINTERS[f.printerId]?.short ?? f.printerId, gcode: out.gcode, stats: out.stats, check: checkGcode(out.gcode, printer, { expected: expectedEnvelope(c.parts, c.plate) }) });
+      }
+      coupon = { ...c, gcode };
+    }
+  }
   opts.onProgress?.(1, 'Done');
-  return { plates, schedule, totalSec, totalGrams, changeoverSec };
+  return { plates, schedule, totalSec, totalGrams, changeoverSec, dryRuns, coupon, rejected: plates.filter((p) => !p.check.ok).length };
 }
 
-function objectsOf(r: FullBuildResult, plate: FullBuildResult['plates'][number]) {
+/** XY envelope and height of the parts as placed on a plate. */
+function expectedEnvelope(parts: Part[], plate: Plate): { min: [number, number]; max: [number, number]; height: number } {
+  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity, height = 0;
+  for (const item of plate.items) {
+    const bb = itemBBox(parts, item.partId);
+    for (const p of bb.parts) {
+      const t = (item.rotation * Math.PI) / 180, c = Math.cos(t), s = Math.sin(t);
+      const P = p.mesh.positions;
+      for (let i = 0; i < P.length; i += 3) { const x = P[i] * c - P[i + 1] * s + item.dx, y = P[i] * s + P[i + 1] * c + item.dy; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+      height = Math.max(height, p.bbox.max[2] - bb.min[2]);
+    }
+  }
+  return { min: [minx, miny], max: [maxx, maxy], height };
+}
+
+function objectsOf(r: FullBuildResult, plate: FullBuildResult['plates'][number]) { return objectsFor(r.parts, plate); }
+export function objectsFor(parts: Part[], plate: Plate) {
   return plate.items.flatMap((item) => {
-    const bb = itemBBox(r.parts, item.partId);
+    const bb = itemBBox(parts, item.partId);
     return bb.parts.map((p) => ({ mesh: p.mesh, transform: placementTransform(item, bb.min[2]), name: p.name, colorChangeAtZ: plate.colorChange && p.kind === 'labelText' ? plate.colorChange.atZ : undefined }));
   });
 }

@@ -38,7 +38,8 @@ describe('slicePlate', () => {
     const printer = getPrinterProfile('bambu-p1s');
     const res = slicePlate({ objects: [{ mesh: meshOf(ring), transform: { rotationDeg: 45, dx: 100, dy: 100, dz: 0 }, colorChangeAtZ: 1.0 }], printer, process: processFor(printer) }, wasm);
     expect(res.stats.layers).toBe(15);
-    expect(res.gcode).toContain('M600');
+    expect(res.gcode).toContain('M400 U1 ; pause for the colour change'); // Bambu pause (Marlin flavours emit M600)
+    expect(res.gcode).not.toContain('M600');
     // inner + outer perimeters -> at least 4 wall loops per layer worth of WALL comments
     expect((res.gcode.match(/;TYPE:WALL-OUTER/g) ?? []).length).toBeGreaterThanOrEqual(15);
     expect(res.gcode).toContain(';TYPE:WALL-INNER');

@@ -236,14 +236,19 @@ $('slice').addEventListener('click', async () => {
 });
 
 function renderSliceResult(m: Extract<FromWorker, { type: 'sliced' }>) {
-  const rows = m.plates.map((p, i) => `<tr><td><span class="sw" style="background:${p.color}"></span>${i + 1}. ${p.name}</td><td>${p.printer}</td><td class="n">${fmtTime(p.timeSec)}</td><td class="n">${p.filamentGrams.toFixed(0)} g</td></tr>`).join('');
+  const rows = m.plates.map((p, i) => `<tr><td><span class="sw" style="background:${p.color}"></span>${i + 1}. ${p.name}</td><td>${p.printer}</td><td class="n">${fmtTime(p.timeSec)}</td><td class="n">${p.filamentGrams.toFixed(0)} g</td><td title="${p.problems.join('\n')}">${p.ok ? '✅' : '❌ rejected'}</td></tr>`).join('');
   const per = m.perPrinter.map((p) => `<div class="k">${p.printer}</div><div class="v">${p.jobs.length} plates · ${fmtTime(p.busySec)}</div>`).join('');
+  const safety = m.rejected
+    ? `<div class="warn">${m.rejected} plate(s) failed the G-code safety check and are in <code>gcode/rejected/</code>. Do not print those; open the per-plate 3MF in your own slicer instead.</div>`
+    : `<div class="statusline">✅ Safety check: all ${m.plates.length} G-code files stay inside the bed, home first, keep heaters within limits and match their plates. <code>gcode/CHECK.md</code> has the details.</div>`;
+  const first = `<div class="statusline">Before a real print: run the air print <code>00-dry-run-*.gcode</code> (no heat, no filament, lifted 20 mm)${m.coupon ? `, then the test coupon <code>00-test-coupon.gcode</code> (${m.coupon.description})` : ''}. Or open <code>plates/*.3mf</code> in Bambu Studio / Cura, which is the safest route.</div>`;
   $('sliceout').innerHTML = `
     <div class="big">${fmtTime(m.makespanSec)}</div>
     <div class="statusline">wall-clock for the whole map on your farm · ${fmtTime(m.totalSec)} of printing · ${m.totalGrams.toFixed(0)} g</div>
     <div class="stats">${per}</div>
-    <button class="btn full" id="dlg">⬇ G-code for every plate (per printer)</button>
-    <details><summary>Per plate</summary><table class="tbl"><tr><th>Plate</th><th>Printer</th><th>Time</th><th>Filament</th></tr>${rows}</table></details>`;
+    ${safety}${first}
+    <button class="btn full" id="dlg">⬇ G-code, dry run, test coupon + CHECK.md</button>
+    <details><summary>Per plate</summary><table class="tbl"><tr><th>Plate</th><th>Printer</th><th>Time</th><th>Filament</th><th>Check</th></tr>${rows}</table></details>`;
   $('dlg').addEventListener('click', () => saveBlob(m.zip, `metrocad-gcode.zip`, 'application/zip'));
 }
 

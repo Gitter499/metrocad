@@ -17,6 +17,9 @@ export interface PrinterProfile {
   flavor: 'bambu' | 'ultimaker' | 'marlin';
   /** Maximum print speed in mm/s (feedrates are capped to this). */
   maxSpeed: number;
+  /** Heater limits (°C) enforced by the G-code safety check. */
+  maxNozzleTemp?: number;
+  maxBedTemp?: number;
   /** Acceleration in mm/s^2, used for the time estimate. */
   accel: number;
   /** Maximum travel speed in mm/s. */
@@ -80,6 +83,8 @@ const BAMBU_A1_MINI: PrinterProfile = {
   filamentDiameter: 1.75,
   flavor: 'bambu',
   maxSpeed: 300,
+  maxNozzleTemp: 300,
+  maxBedTemp: 80,
   accel: 5000,
   travelSpeed: 300,
   gcodeExtension: '.gcode',
@@ -125,6 +130,8 @@ const ULTIMAKER_S3: PrinterProfile = {
   id: 'ultimaker-s3',
   name: 'Ultimaker S3',
   bed: { x: 230, y: 190, z: 200 },
+  maxNozzleTemp: 280,
+  maxBedTemp: 140,
   nozzle: 0.4,
   filamentDiameter: 2.85,
   flavor: 'ultimaker',
@@ -155,6 +162,8 @@ const GENERIC_MARLIN: PrinterProfile = {
   id: 'generic-marlin',
   name: 'Generic Marlin printer',
   bed: { x: 220, y: 220, z: 250 },
+  maxNozzleTemp: 260,
+  maxBedTemp: 100,
   nozzle: 0.4,
   filamentDiameter: 1.75,
   flavor: 'marlin',
@@ -200,6 +209,8 @@ const BAMBU_P1S: PrinterProfile = {
   id: 'bambu-p1s',
   name: 'Bambu Lab P1S',
   bed: { x: 256, y: 256, z: 256 },
+  maxNozzleTemp: 300,
+  maxBedTemp: 100,
   maxSpeed: 400,
   accel: 8000,
   travelSpeed: 400,

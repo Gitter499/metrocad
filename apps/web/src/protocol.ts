@@ -26,7 +26,7 @@ export type FromWorker =
   | { type: 'built'; id: number; parts: DisplayPart[]; layout: MapLayout; params: DesignParams; plates: Plate[]; stats: BuildStats; warnings: string[]; svg: string; place: string; tiles: TileGrid; mapSource?: string }
   | { type: 'bundle'; id: number; zip: Uint8Array; filename: string }
   | { type: 'ar'; id: number; glb: Uint8Array; usdz: Uint8Array }
-  | { type: 'sliced'; id: number; plates: { id: string; name: string; color: string; colorName: string; timeSec: number; filamentGrams: number; layers: number; printer: string; printerId: string }[]; totalSec: number; totalGrams: number; makespanSec: number; perPrinter: { printer: string; busySec: number; jobs: string[] }[]; zip: Uint8Array }
+  | { type: 'sliced'; id: number; plates: { id: string; name: string; color: string; colorName: string; timeSec: number; filamentGrams: number; layers: number; printer: string; printerId: string; ok: boolean; problems: string[] }[]; totalSec: number; totalGrams: number; makespanSec: number; perPrinter: { printer: string; busySec: number; jobs: string[] }[]; zip: Uint8Array; rejected: number; coupon?: { description: string; ok: boolean }; dryRuns: string[] }
   | { type: 'assembly'; id: number; plan: AssemblyPlan; planSvg: string }
   | { type: 'stepAr'; id: number; stepId: string; glb: Uint8Array; usdz: Uint8Array }
   | { type: 'error'; id: number; message: string };

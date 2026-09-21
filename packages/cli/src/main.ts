@@ -142,7 +142,14 @@ const s = result.stats;
 console.log(`\n${net.displayName}`);
 console.log(`  ${result.layout.width.toFixed(0)} × ${result.layout.height.toFixed(0)} mm, ${s.lines} lines, ${s.stations} stations, ${s.labels} labels (${s.unlabeled} skipped)`);
 console.log(`  ${s.parts} parts on ${s.plates} plates, ≈ ${Math.round(s.estimatedGrams)} g filament, ${(s.buildMs / 1000).toFixed(1)} s`);
-if (sliced) console.log(`  sliced: ${(sliced.totalSec / 3600).toFixed(1)} h of printing, ${sliced.totalGrams.toFixed(0)} g · farm of ${sliced.schedule.perPrinter.length} printers finishes in ${(sliced.schedule.makespanSec / 3600).toFixed(1)} h`);
+if (sliced) {
+  console.log(`  sliced: ${(sliced.totalSec / 3600).toFixed(1)} h of printing, ${sliced.totalGrams.toFixed(0)} g · farm of ${sliced.schedule.perPrinter.length} printers finishes in ${(sliced.schedule.makespanSec / 3600).toFixed(1)} h`);
+  const warned = sliced.plates.filter((p) => p.check.ok && p.check.warnings.length).length;
+  if (sliced.rejected) console.log(`  ! G-code safety check: ${sliced.rejected} plate(s) REJECTED (see gcode/CHECK.md and gcode/rejected/) — do not print those`);
+  else console.log(`  G-code safety check: all ${sliced.plates.length} plates passed${warned ? ` (${warned} with warnings, see gcode/CHECK.md)` : ''}`);
+  if (sliced.coupon) console.log(`  test coupon: ${sliced.coupon.description} → plates/00-test-coupon.3mf, gcode/<printer>/00-test-coupon.gcode`);
+  console.log('  dry run (air print, no heat/filament): gcode/<printer>/00-dry-run-*.gcode');
+}
 console.log(`  ${Object.keys(files).length} files (${(bytes / 1e6).toFixed(1)} MB) written to ${out}`);
 for (const w of result.warnings) console.log(`  ! ${w}`);
 void here;
