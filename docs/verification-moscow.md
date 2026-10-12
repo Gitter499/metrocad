@@ -1,6 +1,6 @@
 # Moscow: our layout vs the operator's map
 
-Source drawing: `moscow.svg` · 900 mm wide · 220/220 stations placed on the official geometry · 207 labels placed, 56 moved away from where the drawing has them · 46 geometry problems.
+Source drawing: `moscow.svg` · 900 mm wide · 219/219 stations placed on the official geometry · 208 labels placed, 61 moved away from where the drawing has them · 45 geometry problems.
 
 ![side by side](screenshots/verify-moscow.png)
 
@@ -8,8 +8,8 @@ Source drawing: `moscow.svg` · 900 mm wide · 220/220 stations placed on the of
 |---|---|---|---|---|---|---|---|
 | 1 Сокольническая линия | 27 | 27 | 3 | 0 | #e4002b | #ef161e |  |
 | 2 Замоскворецкая линия | 24 | 24 | 5 | 0 | #006400 | #2dbe2c |  |
-| 3 Арбатско-Покровская линия | 22 | 22 | 4 | 0 | #0072bc | #0078be |  |
-| 4 Филёвская линия | 13 | 13 | 2 | 0 | #33ccff | #00bfff |  |
+| 3 Арбатско-Покровская линия | 22 | 22 | 2 | 0 | #0072bc | #0078be |  |
+| 4 Филёвская линия | 13 | 13 | 4 | 0 | #33ccff | #00bfff |  |
 | 5 Кольцевая линия | 12 | 12 | 5 | 0 | #802f08 | #8d5b2d |  |
 | 6 Калужско-Рижская линия | 24 | 24 | 3 | 0 | #f7941d | #ed9121 |  |
 | 7 Таганско-Краснопресненская линия | 23 | 23 | 3 | 0 | #ff00ff | #800080 |  |
@@ -34,8 +34,8 @@ Source drawing: `moscow.svg` · 900 mm wide · 220/220 stations placed on the of
 * 2: "Белорусская" sits 13 mm off the 2 line (snapped to the wrong stroke?)
 * 3: "Электрозаводская" sits 13 mm off the 3 line (snapped to the wrong stroke?)
 * 3: "Площадь Революции / Охотный Ряд / Театральная" sits 36 mm off the 3 line (snapped to the wrong stroke?)
-* 3: "Арбатская" sits 27 mm off the 3 line (snapped to the wrong stroke?)
-* 3: "Смоленская" sits 35 mm off the 3 line (snapped to the wrong stroke?)
+* 4: "Боровицкая / Александровский сад / Библиотека имени Ленина" sits 26 mm off the 4 line (snapped to the wrong stroke?)
+* 4: "Арбатская" sits 18 mm off the 4 line (snapped to the wrong stroke?)
 * 4: "Киевская" sits 19 mm off the 4 line (snapped to the wrong stroke?)
 * 4: "Деловой Центр" sits 19 mm off the 4 line (snapped to the wrong stroke?)
 * 5: "Проспект Мира" sits 19 mm off the 5 line (snapped to the wrong stroke?)
@@ -69,7 +69,6 @@ Source drawing: `moscow.svg` · 900 mm wide · 220/220 stations placed on the of
 * 11: "Марьина Роща" sits 13 mm off the 11 line (snapped to the wrong stroke?)
 * 12: "Бульвар Дмитрия Донского / Улица Старокачаловская" sits 17 mm off the 12 line (snapped to the wrong stroke?)
 * 15: "Лермонтовский проспект / Косино" sits 12 mm off the 15 line (snapped to the wrong stroke?)
-* 12: "Улица Горчакова" is placed but no line piece passes through it (floating dot)
 
 ## Import log
 
@@ -90,5 +89,5 @@ Source drawing: `moscow.svg` · 900 mm wide · 220/220 stations placed on the of
 * line 16: #017864 (99% of 11 stations)
 * SVG import: "Курская / Чкаловская" is drawn as 3 separate stations (49 mm apart); split
 * SVG import: "Рижская" is drawn as 2 separate stations (57 mm apart); split
-* SVG import: "Боровицкая / Александровский сад / Библиотека имени Ленина" is drawn as 3 separate stations (50 mm apart); split
-* SVG import: 220/220 stations matched, 14 line colours
+* SVG import: "Смоленская" is drawn as 2 separate stations (90 mm apart); split
+* SVG import: 219/219 stations matched, 14 line colours
